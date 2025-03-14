@@ -1,0 +1,32 @@
+version: "3.1"
+services:
+  redis:
+    image: redis:5.0
+    ports:
+      - "6379:6379"
+    command: >
+      bash -c
+      "touch /redis.conf &&
+      echo 'maxmemory 700mb' > /redis.conf &&
+      echo 'maxmemory-policy allkeys-lru' >> /redis.conf &&
+      echo 'maxmemory-samples 5' >> /redis.conf &&
+      redis-server /redis.conf"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 2G
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints: [node.role == manager]
+      replicas: 1
+  mongo:
+    image: mongo
+    ports:
+      - 27017:27017
+    # environment:
+    #   MONGO_INITDB_ROOT_USERNAME: root
+    #   MONGO_INITDB_ROOT_PASSWORD: admin2008
+    volumes:
+      - ./mongo-tradelizer/datadir:/data/db
