@@ -32,7 +32,7 @@ router.use(
   jwtValidation,
   require("./SubCategory.route")
 );
-router.use("/product", jwtValidation, require("./Product.route"));
+router.use("/post", jwtValidation, require("./Post.route"));
 router.use("/tags", jwtValidation, require("./Tags.route"));
 router.use("/snaptrade", jwtValidation, require("./Snaptrade.route"));
 router.use("/coupon", jwtValidation, require("./Coupon.route"));

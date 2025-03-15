@@ -1,6 +1,6 @@
 const { Schema, model } = require("mongoose");
 
-const ProductSchema = new Schema(
+const PostSchema = new Schema(
   {
     title: {
       type: String,
@@ -18,6 +18,20 @@ const ProductSchema = new Schema(
       type: [String],
       required: true,
     },
+    condition: {
+      type: String,
+      enum: ["new", "used"],
+      required: true,
+    },
+    location: {
+      type: String,
+      required: true,
+    },
+    timePeriod: {
+      type: String,
+      default: "7 days",
+      required: true,
+    },
     subCategory: { type: String, ref: "SubCategory", required: true },
     properties: [
       {
@@ -29,6 +43,6 @@ const ProductSchema = new Schema(
   { timestamps: true }
 );
 
-const Product = model("Product", ProductSchema, "products");
+const Post = model("Post", PostSchema, "posts");
 
-module.exports = Product;
+module.exports = Post;
