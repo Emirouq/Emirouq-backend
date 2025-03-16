@@ -16,17 +16,22 @@ const login = async (req, res, next) => {
   try {
     console.log(req.body);
     let { email, phoneNumber, password } = req.body;
-
     if (!email && !phoneNumber) {
       throw createHttpError.BadRequest("Email or phone number is required.");
     }
 
     if (email) email = email.trim().toLowerCase();
+    console.log("email", email);
 
-    const userLogin = await User.findOne({
-      $or: [{ email }, { phoneNumber }],
-    });
+    // const userLogin = await User.findOne({
+    //   $or: [{ email }, { phoneNumber }],
+    // });
+    let userLogin = await User.findOne({ email });
 
+    if (!userLogin) {
+      userLogin = await User.findOne({ phoneNumber });
+    }
+    console.log(11, userLogin);
     if (!userLogin) {
       throw createHttpError.BadRequest("Account not found. Please sign up.");
     }

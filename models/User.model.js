@@ -15,17 +15,21 @@ const UserSchema = new Schema(
       type: Number,
       // required: true,
     },
-    firstName: {
+    // firstName: {
+    //   type: String,
+    //   required: true,
+    // },
+    fullName: {
       type: String,
       required: true,
     },
     profileImage: {
       type: String,
     },
-    lastName: {
-      type: String,
-      required: true,
-    },
+    // lastName: {
+    //   type: String,
+    //   required: true,
+    // },
     isEmail: {
       type: Boolean,
       default: false,
@@ -40,12 +44,25 @@ const UserSchema = new Schema(
       type: String,
       required: true,
     },
+    bio: {
+      type: String,
+    },
+    userHandle: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
     role: {
       type: String,
       required: true,
       enum: ["customer"],
       default: "customer",
     },
+    userInterest: [
+      {
+        type: String,
+      },
+    ],
   },
   { timestamps: true }
 );
