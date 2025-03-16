@@ -27,7 +27,7 @@ const PostSchema = new Schema(
       type: [String],
       required: true,
     },
-    reason: {
+    rejectedReason: {
       type: String,
     },
     condition: {
@@ -44,9 +44,10 @@ const PostSchema = new Schema(
       default: "7 days",
       required: true,
     },
-    accepted: {
-      type: Boolean,
-      default: false,
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
     },
     subCategory: { type: String, ref: "SubCategory", required: true },
     properties: [

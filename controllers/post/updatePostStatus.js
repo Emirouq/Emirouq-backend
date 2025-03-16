@@ -4,21 +4,16 @@ const httpErrors = require("http-errors");
 const updatePostStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { accepted, reason } = req.body;
-
-    if (typeof accepted !== "boolean") {
-      throw httpErrors.BadRequest(
-        "Accepted field is required and must be a boolean"
-      );
-    }
+    const { status, rejectedReason } = req.body;
 
     const post = await Post.findOne({ uuid: id });
     if (!post) {
       throw httpErrors.NotFound("Post not found");
     }
 
-    post.accepted = accepted;
-    post.reason = !accepted && reason ? reason : undefined;
+    post.status = status;
+    post.rejectedReason =
+      status === "rejected" && rejectedReason ? rejectedReason : undefined;
 
     await post.save();
 
