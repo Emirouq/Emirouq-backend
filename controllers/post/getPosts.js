@@ -1,5 +1,5 @@
 const Post = require("../../models/Post.model");
-const SubCategory = require("../../models/SubCategory.model"); // Import the SubCategory model
+const SubCategory = require("../../models/SubCategory.model");
 const httpErrors = require("http-errors");
 
 const getPosts = async (req, res, next) => {
@@ -16,7 +16,6 @@ const getPosts = async (req, res, next) => {
     let data;
 
     if (postId) {
-      // Fetch a single post by post ID
       data = await Post.findOne({ uuid: postId });
       if (!data) {
         throw httpErrors.NotFound("Post not found");
@@ -29,7 +28,6 @@ const getPosts = async (req, res, next) => {
       }
 
       if (categoryId) {
-        // Find all subcategories under this category
         const subcategories = await SubCategory.find({
           category: categoryId,
         }).select("uuid");
@@ -39,11 +37,13 @@ const getPosts = async (req, res, next) => {
           filter.subCategory = { $in: subCategoryIds };
         }
       } else if (subCategoryId) {
-        // Filter by subcategory directly
         filter.subCategory = subCategoryId;
       }
 
-      // If no category or subcategory is provided, fetch all posts
+      if (req.user?.role === "customer") {
+        filter.userId = req.user.uuid;
+      }
+
       data = await Post.find(filter)
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
