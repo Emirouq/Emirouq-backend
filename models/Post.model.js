@@ -15,6 +15,10 @@ const PostSchema = new Schema(
       type: String,
       required: true,
     },
+    userId: {
+      type: String,
+      required: true,
+    },
     price: {
       type: Number,
       required: true,
@@ -22,6 +26,9 @@ const PostSchema = new Schema(
     file: {
       type: [String],
       required: true,
+    },
+    reason: {
+      type: String,
     },
     condition: {
       type: String,

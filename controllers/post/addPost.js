@@ -33,6 +33,7 @@ const addPost = async (req, res, next) => {
 
         const { title, description, price, timePeriod, location, condition } =
           fields;
+        const { uuid: userId } = req.user;
         const { id: subCategory } = req.params;
 
         if (!title) throw httpErrors.BadRequest("Title is required");
@@ -73,6 +74,7 @@ const addPost = async (req, res, next) => {
 
         const newPost = new Post({
           uuid: uuid(),
+          userId,
           title: title[0],
           description: description[0],
           ...(price && { price: price[0] }),
