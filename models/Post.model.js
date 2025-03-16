@@ -2,6 +2,11 @@ const { Schema, model } = require("mongoose");
 
 const PostSchema = new Schema(
   {
+    uuid: {
+      type: String,
+      required: true,
+      unique: true,
+    },
     title: {
       type: String,
       required: true,
@@ -14,7 +19,7 @@ const PostSchema = new Schema(
       type: Number,
       required: true,
     },
-    img: {
+    file: {
       type: [String],
       required: true,
     },
@@ -31,6 +36,10 @@ const PostSchema = new Schema(
       type: String,
       default: "7 days",
       required: true,
+    },
+    accepted: {
+      type: Boolean,
+      default: false,
     },
     subCategory: { type: String, ref: "SubCategory", required: true },
     properties: [

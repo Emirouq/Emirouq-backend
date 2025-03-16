@@ -5,21 +5,26 @@ const { v4: uuid } = require("uuid");
 const { upload } = require("../../services/util/upload-files");
 
 const uploadFilesToAws = async (files, folderName) => {
-  const location = files?.path || files?.filepath;
-  const originalFileName = files?.name || files?.originalFilename;
-  const fileType = files?.type || files?.mimetype;
-  const data = await upload(location, originalFileName, folderName, fileType);
-  return {
-    url: data?.Location,
-    type: fileType,
-    name: originalFileName,
-    uuid: uuid(),
-  };
+  const uploadedFiles = [];
+
+  for (const file of files) {
+    const location = file.path || file.filepath;
+    const originalFileName = file.name || file.originalFilename;
+    const fileType = file.type || file.mimetype;
+
+    const data = await upload(location, originalFileName, folderName, fileType);
+
+    uploadedFiles.push(data?.Location);
+  }
+
+  return uploadedFiles;
 };
 
 const addPost = async (req, res, next) => {
   try {
     const form = new formidable.IncomingForm();
+    form.multiples = true; // Allow multiple file uploads
+
     form.parse(req, async (err, fields, files) => {
       try {
         if (err) {
@@ -37,7 +42,6 @@ const addPost = async (req, res, next) => {
           throw httpErrors.BadRequest("Subcategory ID is required");
 
         let parsedProperties = [];
-        console.log(11, fields.properties);
         if (fields.properties) {
           try {
             parsedProperties = JSON.parse(fields.properties[0]).map((prop) => {
@@ -59,10 +63,12 @@ const addPost = async (req, res, next) => {
           );
         }
 
-        let img = null;
-        if (files?.img) {
-          const uploadedFile = await uploadFilesToAws(files.img[0], "posts");
-          img = uploadedFile.url;
+        let uploadedFiles = [];
+        if (files?.file) {
+          const receivedFiles = Array.isArray(files.file)
+            ? files.file
+            : [files.file];
+          uploadedFiles = await uploadFilesToAws(receivedFiles, "posts");
         }
 
         const newPost = new Post({
@@ -70,13 +76,14 @@ const addPost = async (req, res, next) => {
           title: title[0],
           description: description[0],
           ...(price && { price: price[0] }),
-          ...(img && { img }),
           subCategory,
           ...(parsedProperties.length > 0 && { properties: parsedProperties }),
           ...(timePeriod && { timePeriod: timePeriod[0] }),
           ...(location && { location: location[0] }),
           ...(condition && { condition: condition[0] }),
+          file: uploadedFiles, // Store all images & videos here
         });
+
         await newPost.save();
 
         res.status(201).json({
