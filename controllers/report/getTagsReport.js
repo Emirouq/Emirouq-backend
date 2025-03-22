@@ -1,5 +1,4 @@
 const httpErrors = require("http-errors");
-const Trade = require("../../models/Trade.model");
 const dayjs = require("dayjs");
 const { searchBy } = require("../../utils/socket/searchBy");
 

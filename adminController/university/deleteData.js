@@ -1,4 +1,3 @@
-const University = require("../../models/University.model");
 const createHttpError = require("http-errors");
 const deleteSection = async (req, res, next) => {
   try {

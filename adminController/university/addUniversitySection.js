@@ -1,5 +1,4 @@
 const createHttpError = require("http-errors");
-const University = require("../../models/University.model");
 const { v4: uuid } = require("uuid");
 /**
  * Login for existing users

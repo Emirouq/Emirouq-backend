@@ -1,4 +1,3 @@
-const Trade = require("../../models/Trade.model");
 const { searchBy } = require("../../utils/socket/searchBy");
 
 const getReportStats = async (req, res, next) => {

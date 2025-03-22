@@ -101,7 +101,7 @@
 // module.exports = updateProfile;
 const httpErrors = require("http-errors");
 const { v4: uuid } = require("uuid");
-const uploadBase64File = require("../../services/util/upload-base64-file"); // Create this function
+const uploadBase64File = require("../../services/util/upload-base64-file");
 const UserModel = require("../../models/User.model");
 
 const updateProfile = async (req, res, next) => {
@@ -115,6 +115,7 @@ const updateProfile = async (req, res, next) => {
       userInterest,
       profileImage,
     } = req.body;
+    console.log("req.body", req.body);
     const { uuid: userId } = req.user;
 
     const sanitizedEmail = email?.trim().toLowerCase();
@@ -157,7 +158,7 @@ const updateProfile = async (req, res, next) => {
     if (profileImage) {
       uploadedImageUrl = await uploadBase64File(profileImage, "profile");
     }
-
+    console.log("uploadedImageUrl", uploadedImageUrl);
     const updatedUser = await UserModel.findOneAndUpdate(
       { uuid: userId },
       {
@@ -165,7 +166,7 @@ const updateProfile = async (req, res, next) => {
         ...(phoneNumber && { phoneNumber }),
         ...(sanitizedEmail && { email: sanitizedEmail }),
         ...(sanitizedUserHandle && { userHandle: sanitizedUserHandle }),
-        ...(uploadedImageUrl && { profileImage: uploadedImageUrl }),
+        ...(uploadedImageUrl && { profileImage: uploadedImageUrl?.Location }),
         ...(bio && { bio }),
         ...(parsedUserInterest.length > 0 && {
           userInterest: parsedUserInterest,

@@ -28,8 +28,10 @@ const uploadBase64File = async ({ base64, fileName }, folder) => {
         ACL: "public-read",
       };
       const uploadData = await s3.upload(params).promise();
+      console.log("uploadData", uploadData);
       return resolve({ ...uploadData, type });
     } catch (err) {
+      console.log("err", err);
       reject(err);
       return err;
     }
