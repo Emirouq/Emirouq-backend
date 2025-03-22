@@ -136,6 +136,65 @@ const getPosts = async (req, res, next) => {
           },
         },
         { $unwind: { path: "$userDetails", preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: "subCategories",
+            localField: "subCategory",
+            foreignField: "uuid",
+            as: "subCategoryDetails",
+          },
+        },
+        {
+          $unwind: {
+            path: "$subCategoryDetails",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: "categories",
+            localField: "subCategoryDetails.category",
+            foreignField: "uuid",
+            as: "categoryDetails",
+          },
+        },
+        {
+          $unwind: {
+            path: "$categoryDetails",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $project: {
+            title: 1,
+            description: 1,
+            price: 1,
+            timePeriod: 1,
+            location: 1,
+            condition: 1,
+            status: 1,
+            isDraft: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            userDetails: {
+              firstName: 1,
+              lastName: 1,
+              userHandle: 1,
+              profileImage: 1,
+              email: 1,
+              phone: 1,
+              isActive: 1,
+              role: 1,
+            },
+            subCategoryDetails: {
+              title: 1,
+            },
+            categoryDetails: {
+              title: 1,
+              logo: 1,
+            },
+          },
+        },
       ]);
     }
 
