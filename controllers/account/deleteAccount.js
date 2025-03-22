@@ -1,9 +1,6 @@
 const httpErrors = require("http-errors");
 const Account = require("../../models/Account.model");
 const User = require("../../models/User.model");
-const Trade = require("../../models/Trade.model");
-const Executions = require("../../models/Execution.model");
-const BrokerSync = require("../../models/BrokerSync.model");
 const { v4: uuid } = require("uuid");
 const { deleteAgenda } = require("../../services/util/callApi.utils");
 const deleteAccount = async (req, res, next) => {

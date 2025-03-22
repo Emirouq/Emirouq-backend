@@ -1,8 +1,5 @@
 const httpErrors = require("http-errors");
 const Account = require("../../models/Account.model");
-const Trade = require("../../models/Trade.model");
-const Execution = require("../../models/Execution.model");
-const BrokerSync = require("../../models/BrokerSync.model");
 const updateAccount = async (req, res, next) => {
   try {
     const { accountName, calculationMethod, accountLocation, currency } =
