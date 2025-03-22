@@ -165,7 +165,7 @@ const updateProfile = async (req, res, next) => {
         ...(phoneNumber && { phoneNumber }),
         ...(sanitizedEmail && { email: sanitizedEmail }),
         ...(sanitizedUserHandle && { userHandle: sanitizedUserHandle }),
-        ...(uploadedImageUrl && { profileImage: uploadedImageUrl }),
+        ...(uploadedImageUrl && { profileImage: uploadedImageUrl?.Location }),
         ...(bio && { bio }),
         ...(parsedUserInterest.length > 0 && {
           userInterest: parsedUserInterest,

@@ -1,7 +1,6 @@
 const httpErrors = require("http-errors");
 const Post = require("../../models/Post.model");
 const formidable = require("formidable");
-const { v4: uuid } = require("uuid");
 const { upload } = require("../../services/util/upload-files");
 
 const uploadFilesToAws = async (files, folderName) => {
@@ -19,8 +18,11 @@ const uploadFilesToAws = async (files, folderName) => {
   return uploadedFiles;
 };
 
-const addPost = async (req, res, next) => {
+const updatePost = async (req, res, next) => {
   try {
+    const { id: postId } = req.params;
+    const { uuid: userId } = req.user;
+    console.log(1, postId, userId);
     const form = new formidable.IncomingForm();
     form.multiples = true;
 
@@ -28,6 +30,11 @@ const addPost = async (req, res, next) => {
       try {
         if (err) {
           throw httpErrors.BadRequest("Error parsing form data");
+        }
+
+        const existingPost = await Post.findOne({ uuid: postId, userId });
+        if (!existingPost) {
+          throw httpErrors.NotFound("Post not found");
         }
 
         const {
@@ -39,17 +46,12 @@ const addPost = async (req, res, next) => {
           condition,
           isDraft,
         } = fields;
-        const { uuid: userId } = req.user;
-        const { id: subCategory } = req.params;
-
         const draftMode = isDraft?.[0];
-
+        console.log(11, draftMode);
         if (!draftMode) {
           if (!title) throw httpErrors.BadRequest("Title is required");
           if (!description)
             throw httpErrors.BadRequest("Description is required");
-          if (!subCategory)
-            throw httpErrors.BadRequest("Subcategory ID is required");
         }
 
         let parsedProperties = [];
@@ -68,7 +70,9 @@ const addPost = async (req, res, next) => {
           }
         }
 
-        let uploadedFiles = [];
+        let uploadedFiles = existingPost.file || [];
+        console.log("uploaded files", uploadedFiles);
+        console.log("files", files);
         if (files?.file) {
           const receivedFiles = Array.isArray(files.file)
             ? files.file
@@ -76,28 +80,26 @@ const addPost = async (req, res, next) => {
           uploadedFiles = await uploadFilesToAws(receivedFiles, "posts");
         }
 
-        const newPost = new Post({
-          uuid: uuid(),
-          userId,
-          title: title?.[0] || null,
-          description: description?.[0] || null,
-          ...(price && { price: price[0] }),
-          subCategory: subCategory || null,
-          ...(parsedProperties.length > 0 && { properties: parsedProperties }),
-          ...(timePeriod && { timePeriod: timePeriod[0] }),
-          ...(location && { location: location[0] }),
-          ...(condition && { condition: condition[0] }),
-          file: uploadedFiles,
-          isDraft: draftMode,
-        });
+        existingPost.title = title?.[0] || existingPost.title;
+        existingPost.description = description?.[0] || existingPost.description;
+        existingPost.price = price?.[0] || existingPost.price;
+        existingPost.timePeriod = timePeriod?.[0] || existingPost.timePeriod;
+        existingPost.location = location?.[0] || existingPost.location;
+        existingPost.condition = condition?.[0] || existingPost.condition;
+        existingPost.properties =
+          parsedProperties.length > 0
+            ? parsedProperties
+            : existingPost.properties;
+        existingPost.file = uploadedFiles;
+        existingPost.isDraft = draftMode;
 
-        await newPost.save();
+        await existingPost.save();
 
-        res.status(201).json({
+        res.status(200).json({
           message: draftMode
-            ? "Post saved as draft"
-            : "Post added successfully",
-          data: newPost,
+            ? "Post updated as draft"
+            : "Post published successfully",
+          data: existingPost,
         });
       } catch (error) {
         next(error);
@@ -108,4 +110,4 @@ const addPost = async (req, res, next) => {
   }
 };
 
-module.exports = addPost;
+module.exports = updatePost;

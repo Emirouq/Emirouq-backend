@@ -10,10 +10,6 @@ router.put("/password/:token", resetPassword);
 
 const roleCheck = require("../../middlewares/roleCheck");
 
-router.get(
-  "/",
-  (req, res, next) => roleCheck(req, res, next, ["admin"]),
-  getAllUsers
-);
+router.get("/", getAllUsers);
 
 module.exports = router;

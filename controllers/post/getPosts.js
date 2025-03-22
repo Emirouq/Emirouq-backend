@@ -11,22 +11,38 @@ const getPosts = async (req, res, next) => {
       limit = 10,
       categoryId,
       subCategoryId,
+      status,
     } = req.query;
 
     let data;
 
     if (postId) {
-      data = await Post.findOne({ uuid: postId });
-      if (!data) {
+      data = await Post.aggregate([
+        { $match: { uuid: postId } },
+        {
+          $lookup: {
+            from: "user",
+            localField: "userId",
+            foreignField: "uuid",
+            as: "userDetails",
+          },
+        },
+        { $unwind: { path: "$userDetails", preserveNullAndEmptyArrays: true } },
+      ]);
+
+      if (!data.length) {
         throw httpErrors.NotFound("Post not found");
       }
+      data = data[0];
     } else {
       let filter = {};
 
       if (keyword) {
         filter.title = { $regex: keyword, $options: "i" };
       }
-
+      if (status) {
+        filter.status = status;
+      }
       if (categoryId) {
         const subcategories = await SubCategory.find({
           category: categoryId,
@@ -43,11 +59,25 @@ const getPosts = async (req, res, next) => {
       if (req.user?.role === "customer") {
         filter.userId = req.user.uuid;
       }
+      if (req.user?.role !== "customer") {
+        filter.isDraft = false;
+      }
 
-      data = await Post.find(filter)
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(Number(limit));
+      data = await Post.aggregate([
+        { $match: filter },
+        { $sort: { createdAt: -1 } },
+        { $skip: (page - 1) * limit },
+        { $limit: Number(limit) },
+        {
+          $lookup: {
+            from: "user",
+            localField: "userId",
+            foreignField: "uuid",
+            as: "userDetails",
+          },
+        },
+        { $unwind: { path: "$userDetails", preserveNullAndEmptyArrays: true } },
+      ]);
     }
 
     res.status(200).json({

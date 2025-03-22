@@ -9,11 +9,11 @@ const PostSchema = new Schema(
     },
     title: {
       type: String,
-      required: true,
+      // required: true,
     },
     description: {
       type: String,
-      required: true,
+      // required: true,
     },
     userId: {
       type: String,
@@ -21,11 +21,11 @@ const PostSchema = new Schema(
     },
     price: {
       type: Number,
-      required: true,
+      // required: true,
     },
     file: {
       type: [String],
-      required: true,
+      // required: true,
     },
     rejectedReason: {
       type: String,
@@ -33,16 +33,20 @@ const PostSchema = new Schema(
     condition: {
       type: String,
       enum: ["new", "used"],
-      required: true,
+      // required: true,
+    },
+    isDraft: {
+      type: Boolean,
+      default: false,
     },
     location: {
       type: String,
-      required: true,
+      // required: true,
     },
     timePeriod: {
       type: String,
       default: "7 days",
-      required: true,
+      // required: true,
     },
     status: {
       type: String,
