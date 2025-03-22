@@ -42,7 +42,7 @@ const adminLogin = async (req, res, next) => {
       firstName: userLogin?.firstName,
       lastName: userLogin?.lastName,
       email: userLogin?.email,
-      role: "admin",
+      role: "Admin",
     };
 
     // generate access and refresh tokens
