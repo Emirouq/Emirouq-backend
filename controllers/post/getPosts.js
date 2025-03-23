@@ -58,6 +58,7 @@ const getPosts = async (req, res, next) => {
         },
         {
           $project: {
+            uuid: 1,
             title: 1,
             description: 1,
             price: 1,
@@ -68,6 +69,7 @@ const getPosts = async (req, res, next) => {
             isDraft: 1,
             createdAt: 1,
             updatedAt: 1,
+            file: 1,
             userDetails: {
               firstName: 1,
               lastName: 1,
@@ -166,6 +168,7 @@ const getPosts = async (req, res, next) => {
         },
         {
           $project: {
+            uuid: 1,
             title: 1,
             description: 1,
             price: 1,
@@ -176,6 +179,7 @@ const getPosts = async (req, res, next) => {
             isDraft: 1,
             createdAt: 1,
             updatedAt: 1,
+            file: 1,
             userDetails: {
               firstName: 1,
               lastName: 1,
