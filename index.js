@@ -56,7 +56,7 @@ mongoose
     console.log(`${chalk.green("✓")} ${chalk.blue("MongoDB Connected!")}`)
   )
   .then(async () => {
-    http.listen(port, "192.168.29.74", () => {
+    http.listen(port, () => {
       console.log(
         `${chalk.green("✓")} ${chalk.blue(
           "Server Started on port"
