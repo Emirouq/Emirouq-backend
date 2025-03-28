@@ -81,7 +81,7 @@ const validateAccessToken = async (req, res, next) => {
     }
     let user;
     let payload;
-    if (decoded.role === "admin") {
+    if (decoded.role === "Admin") {
       user = await AdminModel.findOne({ uuid: decoded.uuid });
       payload = {
         _id: user?._id,
