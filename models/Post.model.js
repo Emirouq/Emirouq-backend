@@ -35,9 +35,10 @@ const PostSchema = new Schema(
       enum: ["new", "used"],
       // required: true,
     },
-    isDraft: {
-      type: Boolean,
-      default: false,
+    status: {
+      type: String,
+      enum: ["pending", "draft", "active", "expired"],
+      default: "pending",
     },
     location: {
       type: String,
@@ -48,12 +49,8 @@ const PostSchema = new Schema(
       default: "7 days",
       // required: true,
     },
-    status: {
-      type: String,
-      enum: ["pending", "approved", "rejected"],
-      default: "pending",
-    },
     subCategory: { type: String, ref: "SubCategory", required: true },
+    category: { type: String, ref: "Category", required: true },
     properties: [
       {
         name: { type: String, required: true },

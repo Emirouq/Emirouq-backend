@@ -30,7 +30,7 @@ const addPost = async (req, res, next) => {
           throw httpErrors.BadRequest("Error parsing form data");
         }
 
-        const {
+        let {
           title,
           description,
           price,
@@ -38,9 +38,11 @@ const addPost = async (req, res, next) => {
           location,
           condition,
           isDraft,
+          category,
+          subCategory,
         } = fields;
+
         const { uuid: userId } = req.user;
-        const { id: subCategory } = req.params;
 
         const draftMode = isDraft?.[0];
 
@@ -49,7 +51,8 @@ const addPost = async (req, res, next) => {
           if (!description)
             throw httpErrors.BadRequest("Description is required");
           if (!subCategory)
-            throw httpErrors.BadRequest("Subcategory ID is required");
+            throw httpErrors.BadRequest("Subcategory Id is required");
+          if (!category) throw httpErrors.BadRequest("Category Id is required");
         }
 
         let parsedProperties = [];
@@ -78,17 +81,18 @@ const addPost = async (req, res, next) => {
 
         const newPost = new Post({
           uuid: uuid(),
+          status: !!draftMode === true ? "draft" : "pending",
           userId,
           title: title?.[0] || null,
           description: description?.[0] || null,
           ...(price && { price: price[0] }),
-          subCategory: subCategory || null,
+          subCategory: subCategory?.[0] || null,
+          category: category?.[0] || null,
           ...(parsedProperties.length > 0 && { properties: parsedProperties }),
           ...(timePeriod && { timePeriod: timePeriod[0] }),
           ...(location && { location: location[0] }),
           ...(condition && { condition: condition[0] }),
           file: uploadedFiles,
-          isDraft: draftMode,
         });
 
         await newPost.save();
