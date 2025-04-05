@@ -47,11 +47,7 @@ app.use(routes);
 // mongoose.set("useCreateIndex", true);
 // require("./test");
 mongoose
-  .connect(dbUrl, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    // useFindAndModify: false,
-  })
+  .connect(dbUrl)
   .then(() =>
     console.log(`${chalk.green("✓")} ${chalk.blue("MongoDB Connected!")}`)
   )
