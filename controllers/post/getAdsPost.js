@@ -3,6 +3,7 @@ const { searchBy } = require("../../utils/socket/searchBy");
 const getAdsPost = async (req, res, next) => {
   try {
     const { start, limit, status } = req.query;
+    const { uuid: userId } = req.user;
     // for search by status, result, tradeType, tags, keyword, startDate, endDate
     const searchCriteria = searchBy({
       status,
@@ -10,6 +11,7 @@ const getAdsPost = async (req, res, next) => {
     const data = await Post.aggregate([
       {
         $match: {
+          userId,
           ...searchCriteria,
         },
       },
