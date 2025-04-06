@@ -39,7 +39,7 @@ const getAdsPost = async (req, res, next) => {
               $skip: parseInt(start || 0),
             },
             {
-              $limit: parseInt(limit || 20),
+              $limit: parseInt(limit || 10),
             },
           ],
           count: [
