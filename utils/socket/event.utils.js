@@ -1,9 +1,14 @@
 const UserState = {
+  onlineUsers: [],
+  setOnlineUsers: function (newUsers) {
+    this.onlineUsers = newUsers;
+  },
   users: [],
   setUsers: function (newUsers) {
     this.users = newUsers;
   },
 };
+console.log("UserState", UserState);
 const socketEvents = (io) => {
   io?.on("connection", (socket) => {
     console.log(socket.id);
@@ -12,6 +17,7 @@ const socketEvents = (io) => {
 
     socket.on("join_room", (id) => {
       socket.join(id);
+      setOnlineUser(socket.id, id);
     });
 
     socket?.on("heartbeat", async (id) => {
@@ -26,8 +32,11 @@ const socketEvents = (io) => {
     //upon connection- only to user
     socket.emit("message", "hello");
 
-    socket.on("conversationRoom", async ({ name, conversationId }) => {
-      if (!name || !conversationId) {
+    socket.on("conversationRoom", async (payload) => {
+      const res = getAllOnlineUsers();
+
+      const { userId, conversationId } = payload;
+      if (!userId || !conversationId) {
         console.log("no conversation id created");
         return;
       }
@@ -35,14 +44,11 @@ const socketEvents = (io) => {
       const prevRoom = getUser(socket?.id)?.conversationId;
       if (prevRoom) {
         socket.leave(prevRoom);
-        io.to(prevRoom).emit(
-          "message",
-          `${name} has left the room ${prevRoom}`
-        );
+        io.to(prevRoom).emit("message", "Left previous room");
       }
       //join new room
       //activate user
-      const user = activateUser(socket?.id, name, conversationId);
+      const user = activateUser(socket?.id, userId, conversationId);
 
       //Cannot update previous room users list until after the user leaves
       if (prevRoom) {
@@ -53,29 +59,23 @@ const socketEvents = (io) => {
 
       socket.join(user?.conversationId);
 
-      //To user who just joined
-      socket.emit(
-        "message",
-        buildMessage("Welcome", "admin", user?.conversationId)
-      );
-
       //to all users in the room
-      socket.broadcast
-        .to(user.conversationId)
-        .emit(
-          "message",
-          buildMessage(`${name} has joined`, "admin", user?.conversationId)
-        );
+      socket.broadcast.to(user?.conversationId).emit("message", "Just joined");
 
       //update user list for room
       io.to(user?.conversationId).emit("userList", {
         users: getUsersInRoom(user?.conversationId),
       });
 
+      io.to(user?.conversationId).emit("onlineUsers", {
+        users: getAllOnlineUsers(),
+      });
+
       // update rooms list for all users
       io.emit("roomList", {
         rooms: getAllActiveRooms(),
       });
+      console.log("User joined", user);
     });
 
     // When the user disconnects - to all users
@@ -84,7 +84,7 @@ const socketEvents = (io) => {
       if (!user) {
         return;
       }
-      userLeavesApp(user.id);
+      userLeavesApp(user?.userId);
       if (user) {
         io.to(user?.conversationId).emit(
           "message",
@@ -93,10 +93,14 @@ const socketEvents = (io) => {
         io.to(user?.conversationId).emit("userList", {
           users: getUsersInRoom(user?.conversationId),
         });
+        socket.broadcast.to(user?.conversationId).emit("onlineUsers", {
+          users: getAllOnlineUsers(),
+        });
         io.emit("roomList", {
           rooms: getAllActiveRooms(),
         });
       }
+
       console.log("User disconnected", socket.id);
     });
 
@@ -145,32 +149,53 @@ function buildMessage() {
 }
 
 //user Functions
-const activateUser = (id, name, conversationId) => {
-  if (!id || !name || !conversationId) {
+const activateUser = (socketId, userId, conversationId) => {
+  if (!socketId || !userId || !conversationId) {
     return;
   }
-  const user = { id, name, conversationId };
+  const user = { socketId, userId, conversationId };
   // for no duplicate users
   UserState.setUsers([
-    ...UserState.users.filter((user) => user.id !== id),
+    ...UserState.users.filter((user) => user?.userId !== userId),
     user,
   ]);
   return user;
+};
+//user Functions
+const setOnlineUser = (socketId, userId) => {
+  if (!socketId || !userId) {
+    return;
+  }
+  const user = { socketId, userId };
+  // for no duplicate users
+  UserState.setOnlineUsers([
+    ...UserState.onlineUsers.filter((user) => user?.userId !== userId),
+    user,
+  ]);
+  return user;
+};
+const getAllOnlineUsers = () => {
+  return UserState.onlineUsers;
 };
 
 const userLeavesApp = (id) => {
   if (!id) {
     return;
   }
-  UserState.setUsers([...UserState.users.filter((user) => user.id !== id)]);
+  UserState.setUsers([
+    ...UserState.users.filter((user) => user?.userId !== id),
+  ]);
+  UserState.setOnlineUsers([
+    ...UserState.onlineUsers.filter((user) => user?.userId !== id),
+  ]);
 };
 
 //get user by id
-const getUser = (id) => {
-  if (!id) {
+const getUser = (socketId) => {
+  if (!socketId) {
     return;
   }
-  const user = UserState.users.find((user) => user.id === id);
+  const user = UserState.users.find((user) => user?.socketId === socketId);
   return user;
 };
 
@@ -188,9 +213,4 @@ const getAllActiveRooms = () => {
   return Array.from(
     new Set(UserState.users.map((user) => user?.conversationId))
   );
-};
-
-//get all users
-const getAllUsers = () => {
-  return UserState.users;
 };
