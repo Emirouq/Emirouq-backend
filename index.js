@@ -61,6 +61,6 @@ mongoose
         )}`
       );
     });
-    // require("./utils/socket/event.utils")(io);
+    require("./utils/socket/event.utils")(io);
   })
   .catch((err) => console.log(err));
