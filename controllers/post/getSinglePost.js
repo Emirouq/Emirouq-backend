@@ -53,6 +53,20 @@ const getSinglePost = async (req, res, next) => {
           preserveNullAndEmptyArrays: true,
         },
       },
+      {
+        $lookup: {
+          from: "conversation",
+          localField: "uuid",
+          foreignField: "postId",
+          as: "conversation",
+        },
+      },
+      {
+        $unwind: {
+          path: "$conversation",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
     ]);
 
     res.json({

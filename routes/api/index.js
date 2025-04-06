@@ -14,9 +14,7 @@ router.use(
 );
 router.use("/support", jwtValidation, require("./Support.route"));
 router.use("/account", jwtValidation, require("./Account.route"));
-// router.use("/report", jwtValidation, require("./Report.route"));
 router.use("/user", jwtValidation, require("./User.route"));
-// router.use("/transaction", jwtValidation, require("./Transaction.route"));
 router.use("/category", jwtValidation, require("./Category.route"));
 router.use(
   "/category/subCategory",
@@ -24,10 +22,6 @@ router.use(
   require("./SubCategory.route")
 );
 router.use("/post", jwtValidation, require("./Post.route"));
-// router.use("/enquiry", require("./Enquiry.route"));
-// router.post("/agenda", agendaCallService);
-// router.post("/agenda/snap-commission", agendaCallServiceForSnapService);
-
-//For historical Data
+router.use("/conversation", jwtValidation, require("./Conversation.route"));
 
 module.exports = router;

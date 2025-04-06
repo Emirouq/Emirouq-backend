@@ -4,7 +4,7 @@ const UserState = {
     this.users = newUsers;
   },
 };
-const messageService = (io) => {
+const socketEvents = (io) => {
   io?.on("connection", (socket) => {
     console.log(socket.id);
 
@@ -127,7 +127,7 @@ const messageService = (io) => {
     });
   });
 };
-module.exports = messageService;
+module.exports = socketEvents;
 
 function buildMessage() {
   return {
