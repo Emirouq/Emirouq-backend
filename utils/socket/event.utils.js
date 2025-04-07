@@ -28,6 +28,12 @@ const socketEvents = (io) => {
 
     //upon connection- only to user
     socket.emit("message", "hello");
+    socket.on("fetchOnlineUser", async (userId, cb) => {
+      const status = await redisClient.get(userId?.toString());
+      if (status) {
+        cb(status);
+      }
+    });
 
     socket.on("conversationRoom", async (payload) => {
       const res = getAllOnlineUsers();
@@ -164,27 +170,21 @@ const setOnlineUser = (socketId, userId) => {
     return;
   }
   const user = { socketId, userId };
-  // for no duplicate users
-  UserState.setOnlineUsers([
-    ...UserState.onlineUsers.filter((user) => user?.userId !== userId),
-    user,
-  ]);
+
   return user;
 };
 const getAllOnlineUsers = () => {
   return UserState.onlineUsers;
 };
 
-const userLeavesApp = (id) => {
+const userLeavesApp = async (id) => {
   if (!id) {
     return;
   }
   UserState.setUsers([
     ...UserState.users.filter((user) => user?.userId !== id),
   ]);
-  UserState.setOnlineUsers([
-    ...UserState.onlineUsers.filter((user) => user?.userId !== id),
-  ]);
+  await redisClient.del(id?.toString());
 };
 
 //get user by id
