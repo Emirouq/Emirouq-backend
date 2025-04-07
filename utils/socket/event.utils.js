@@ -14,13 +14,15 @@ const socketEvents = (io) => {
 
     socket.on("join_room", async (id) => {
       socket.join(id);
-      await redisClient.set(id?.toString(), "online");
+      // await redisClient.sAdd("onlineUsers", id);
+      await activateUser(socket.id, id);
+      io.emit("fetchOnlineUsers", await getAllOnlineUsers());
     });
 
     socket?.on("heartbeat", async (id) => {
       try {
-        socket.join(`${id}`);
-        await redisClient.set(id?.toString(), "online");
+        socket.join(id);
+        await activateUser(socket.id, id);
       } catch (err) {
         console.log(err);
       }
@@ -28,19 +30,14 @@ const socketEvents = (io) => {
 
     //upon connection- only to user
     socket.emit("message", "hello");
-    socket.on("fetchOnlineUser", async (userId, cb) => {
-      // fetch userId conversationId
-      // conversation model
-
-      const status = await redisClient.get(userId?.toString());
-      if (status) {
-        cb(status);
+    socket.on("onlineUserList", async (cb) => {
+      const onlineUsers = await getAllOnlineUsers();
+      if (!!onlineUsers?.length) {
+        cb && cb(onlineUsers);
       }
     });
 
     socket.on("conversationRoom", async (payload) => {
-      const res = getAllOnlineUsers();
-
       const { userId, conversationId } = payload;
       if (!userId || !conversationId) {
         console.log("no conversation id created");
@@ -86,26 +83,15 @@ const socketEvents = (io) => {
 
     // When the user disconnects - to all users
     socket.on("disconnect", async () => {
-      const user = getUser(socket.id);
-      if (!user) {
-        return;
-      }
-      await userLeavesApp(user?.userId);
-      if (user) {
-        io.to(user?.conversationId).emit(
-          "message",
-          buildMessage(`${user.name} has left`, "admin", user?.conversationId)
-        );
-        const usersInRoom = getUsersInRoom(user?.conversationId);
-        usersInRoom?.forEach((user) => {
-          socket.broadcast.to(user?.userId).emit("status", "offline");
-        });
+      const user = await getUser(socket.id);
 
-        socket.broadcast.to(user?.conversationId).emit("fetchOnlineUser", {});
-        io.emit("roomList", {
-          rooms: getAllActiveRooms(),
-        });
-      }
+      await Promise.all([
+        userLeavesApp(user?.userId),
+        clearSocketCache(socket.id),
+      ]);
+      const onlineUsers = await getAllOnlineUsers();
+      console.log(onlineUsers, "onlineUsers");
+      io.emit("fetchOnlineUsers", onlineUsers);
 
       console.log("User disconnected", socket.id);
     });
@@ -155,48 +141,46 @@ function buildMessage() {
 }
 
 //user Functions
-const activateUser = (socketId, userId, conversationId) => {
-  if (!socketId || !userId || !conversationId) {
-    return;
-  }
-  const user = { socketId, userId, conversationId };
-  // for no duplicate users
-  UserState.setUsers([
-    ...UserState.users.filter((user) => user?.userId !== userId),
-    user,
-  ]);
-  return user;
-};
-//user Functions
-const setOnlineUser = (socketId, userId) => {
+const activateUser = async (socketId, userId) => {
   if (!socketId || !userId) {
     return;
   }
-  const user = { socketId, userId };
-
-  return user;
+  await Promise.all([
+    redisClient.set(socketId, userId),
+    redisClient.sAdd("onlineUsers", userId),
+  ]);
 };
-const getAllOnlineUsers = () => {
-  return UserState.onlineUsers;
+
+const getAllOnlineUsers = async () => {
+  return await redisClient.sMembers("onlineUsers");
 };
 
 const userLeavesApp = async (id) => {
   if (!id) {
     return;
   }
-  UserState.setUsers([
-    ...UserState.users.filter((user) => user?.userId !== id),
-  ]);
-  await redisClient.del(id?.toString());
+  await redisClient.sRem("onlineUsers", id);
+};
+const clearSocketCache = async (id) => {
+  if (!id) {
+    return;
+  }
+  await redisClient.del(id);
 };
 
 //get user by id
-const getUser = (socketId) => {
+const getUser = async (socketId) => {
   if (!socketId) {
     return;
   }
-  const user = UserState.users.find((user) => user?.socketId === socketId);
-  return user;
+  const userId = await redisClient.get(socketId);
+  if (!userId) {
+    return;
+  }
+  return {
+    socketId,
+    userId,
+  };
 };
 
 //get users that are in the same room
