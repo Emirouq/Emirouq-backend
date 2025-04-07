@@ -29,6 +29,9 @@ const socketEvents = (io) => {
     //upon connection- only to user
     socket.emit("message", "hello");
     socket.on("fetchOnlineUser", async (userId, cb) => {
+      // fetch userId conversationId
+      // conversation model
+
       const status = await redisClient.get(userId?.toString());
       if (status) {
         cb(status);
@@ -82,23 +85,23 @@ const socketEvents = (io) => {
     });
 
     // When the user disconnects - to all users
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       const user = getUser(socket.id);
       if (!user) {
         return;
       }
-      userLeavesApp(user?.userId);
+      await userLeavesApp(user?.userId);
       if (user) {
         io.to(user?.conversationId).emit(
           "message",
           buildMessage(`${user.name} has left`, "admin", user?.conversationId)
         );
-        io.to(user?.conversationId).emit("userList", {
-          users: getUsersInRoom(user?.conversationId),
+        const usersInRoom = getUsersInRoom(user?.conversationId);
+        usersInRoom?.forEach((user) => {
+          socket.broadcast.to(user?.userId).emit("status", "offline");
         });
-        socket.broadcast.to(user?.conversationId).emit("onlineUsers", {
-          users: getAllOnlineUsers(),
-        });
+
+        socket.broadcast.to(user?.conversationId).emit("fetchOnlineUser", {});
         io.emit("roomList", {
           rooms: getAllActiveRooms(),
         });

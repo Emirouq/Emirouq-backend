@@ -19,6 +19,11 @@ const chatSchema = new Schema(
     message: {
       type: String,
     },
+    type: {
+      type: String,
+      enum: ["text", "image", "video", "audio", "file"],
+      default: "text",
+    },
     isEdited: {
       type: Boolean,
       default: false,
