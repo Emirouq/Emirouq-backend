@@ -1,29 +1,26 @@
+const redisClient = require("../Redis.util");
+
 const UserState = {
-  onlineUsers: [],
-  setOnlineUsers: function (newUsers) {
-    this.onlineUsers = newUsers;
-  },
   users: [],
   setUsers: function (newUsers) {
     this.users = newUsers;
   },
 };
-console.log("UserState", UserState);
 const socketEvents = (io) => {
   io?.on("connection", (socket) => {
     console.log(socket.id);
 
     //join room
 
-    socket.on("join_room", (id) => {
+    socket.on("join_room", async (id) => {
       socket.join(id);
-      setOnlineUser(socket.id, id);
+      await redisClient.set(id?.toString(), "online");
     });
 
     socket?.on("heartbeat", async (id) => {
-      console.log("heartbeat", id);
       try {
         socket.join(`${id}`);
+        await redisClient.set(id?.toString(), "online");
       } catch (err) {
         console.log(err);
       }

@@ -9,6 +9,7 @@ const morgan = require("morgan");
 const { port, dbUrl } = require("./config/keys").host;
 const bodyParser = require("body-parser");
 const routes = require("./routes");
+require("./utils/Redis.util");
 const { setIo } = require("./utils/socket/io.utils");
 const io = require("socket.io")(http, {
   cors: {

@@ -36,6 +36,10 @@ module.exports = {
   url: {
     testUrl: process.env.TEST_REDIRECT_URL,
   },
+  redis: {
+    url: "redis://localhost:6379",
+    EX: 60 * 60 * 24,
+  },
   emailverifyKey: {
     initVector: process.env.EMAIL_VERIFY_INIT_VECTOR,
     securitykey: process.env.EMAIL_VERIFY_SECURITY_KEY,
