@@ -13,6 +13,25 @@ const getAdsPost = async (req, res, next) => {
         $match: {
           userId,
           ...searchCriteria,
+          isExpired: false,
+        },
+      },
+      //for free Users
+      {
+        $set: {
+          isExpiredForFreeUser: {
+            $cond: {
+              if: { $lt: ["$expirationDate", Date.now()] },
+              then: true,
+              else: false,
+            },
+          },
+        },
+      },
+      {
+        $match: {
+          plan: "free",
+          isExpiredForFreeUser: false,
         },
       },
       {

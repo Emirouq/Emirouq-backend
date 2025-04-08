@@ -57,6 +57,24 @@ const PostSchema = new Schema(
         value: { type: String, required: true },
       },
     ],
+    // for Homepage Spotlight plan , we will update the post visibility
+    visibility: {
+      enum: ["basic", "featured", "higher"],
+      type: String,
+      default: "basic",
+    },
+    expirationDate: {
+      type: Number,
+    },
+    // when user plan get expired, we will set the post expired as true
+    isExpired: {
+      type: Boolean,
+      default: false,
+    },
+    //for free users, we will set the plan to free else name of the plan
+    plan: {
+      type: String,
+    },
   },
   { timestamps: true }
 );
