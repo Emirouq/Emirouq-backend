@@ -3,7 +3,7 @@ const router = require("express").Router();
 const apiRoutes = require("./api");
 const adminRoutes = require("./adminApi");
 
-router.use("/api", adminRoutes);
+router.use("/admin/api", adminRoutes);
 router.use("/api", apiRoutes);
 
 router.get("/ping", (req, res) => {
