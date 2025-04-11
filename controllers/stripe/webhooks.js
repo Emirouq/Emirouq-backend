@@ -4,8 +4,8 @@ const UserModel = require("../../models/User.model");
 const Transaction = require("../../models/Transaction.model");
 const dayjs = require("dayjs");
 const { webhookSecret } = require("../../config/keys").stripe;
-const { tier1, tier2, trial, usdTier1, testing, tradeLizerTesting } =
-  require("../../config/keys").stripe.plans;
+// const { tier1, tier2, trial, usdTier1, testing, tradeLizerTesting } =
+//   require("../../config/keys").stripe.plans;
 const { v4: uuid } = require("uuid");
 const AccountModel = require("../../models/Account.model");
 const { sendEmail } = require("../../services/util/sendEmail");

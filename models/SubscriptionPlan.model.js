@@ -1,4 +1,6 @@
-const subscriptionPlanSchema = new mongoose.Schema({
+const { Schema, model } = require("mongoose");
+
+const subscriptionPlanSchema = Schema({
   name: {
     type: String,
     required: true,

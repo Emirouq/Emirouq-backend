@@ -5,8 +5,8 @@ const stripe = require("../../services/stripe/getStripe");
 
 const { liveRedirectUrl, testRedirectUrl } =
   require("../../config/keys").emailverifyKey;
-const { tier1, tier2, usdTier2, usdTier1 } =
-  require("../../config/keys").stripe.plans;
+// const { tier1, tier2, usdTier2, usdTier1 } =
+//   require("../../config/keys").stripe.plans;
 
 const { nodeEnv } = require("../../config/keys").environmental;
 const changeSubscription = async (req, res, next) => {

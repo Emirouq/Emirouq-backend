@@ -1,8 +1,8 @@
 const UserModel = require("../../models/User.model");
 const stripe = require("../../services/stripe/getStripe");
-const {
-  plans: { trial },
-} = require("../../config/keys").stripe;
+// const {
+//   plans: { trial },
+// } = require("../../config/keys").stripe;
 
 /**
  * Create stripe checkout session
