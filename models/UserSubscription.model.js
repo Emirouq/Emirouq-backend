@@ -6,11 +6,11 @@ const userSubscriptionModelSchema = new Schema({
     ref: "User",
     required: true,
   },
-  // subscription plan uuid
-  plan: {
-    type: String,
-    ref: "Subscription",
-    required: true,
+  // subscription plan , we have to save the whole object
+  // since if we change the plan in the future, we need to know
+  // which plan the user subscribed to
+  subscriptionPlan: {
+    type: Object,
   },
 
   validTill: {

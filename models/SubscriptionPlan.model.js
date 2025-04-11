@@ -2,7 +2,7 @@ const subscriptionPlanSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    enum: ["Basic", "Starter", "Pro", "Elite", "Business"],
+    enum: ["basic", "started", "pro", "elite", "business"],
   },
 
   durationDays: {
