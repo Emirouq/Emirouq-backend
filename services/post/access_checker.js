@@ -3,27 +3,52 @@ const httpErrors = require("http-errors");
 const Post = require("../../models/Post.model");
 const User = require("../../models/User.model");
 const SubscriptionPlan = require("../../models/SubscriptionPlan.model");
+const UserSubscription = require("../../models/UserSubscription.model");
 
 const accessChecker = async (userId) => {
   try {
-    // 1. Get User & Plan Details
-    const user = await User.findOne({ uuid: userId }, { subscriptionPlan: 1 });
+    // 1. Get subscription details (using userId)
+    const subscription = await UserSubscription.findOne({ user: userId });
 
     let planName = "free";
     let numberOfAdsAllowed = 1;
     let durationDays = 0;
     let isFreePlan = true; // track if the user is on the free plan
 
-    if (user?.subscriptionPlan?.plan !== "free") {
-      const plan = user.subscriptionPlan;
+    //if the user has a subscription plan, get the details and update the variables.
+    if (subscription?.subscriptionId) {
+      const plan = subscription?.subscriptionPlan;
       planName = plan?.name;
       numberOfAdsAllowed = plan?.numberOfAds;
       durationDays = plan?.duration;
       isFreePlan = false; // User has a subscription plan, so they're not free
     }
 
-    // 2. Check Existing Posts (using creatorId)
-    const postsByUser = await Post.find({ userId }).sort({
+    let startDate;
+
+    // get the start date based on the plan type
+    if (!isFreePlan && subscription?.subscriptionPlan?.startDate) {
+      startDate = dayjs(
+        subscription?.subscriptionPlan?.startDate
+      ).toISOString();
+    } else {
+      // For free plan, consider a rolling 15-day window from their last post
+      const lastPost = await Post.findOne({ userId }).sort({ createdAt: -1 });
+      if (!lastPost) {
+        return true;
+      }
+      startDate = dayjs(lastPost?.createdAt).subtract(15, "day")?.toISOString();
+    }
+    const endDate = dayjs().toISOString();
+
+    // 2. Check Existing Posts (using userId)
+    const postsByUser = await Post.find({
+      userId,
+      createdAt: {
+        $gte: startDate,
+        $lte: endDate,
+      },
+    }).sort({
       createdAt: -1,
     });
 
@@ -35,6 +60,7 @@ const accessChecker = async (userId) => {
           dayjs(lastPost?.createdAt),
           "day"
         );
+
         if (differenceInDays < 15) {
           throw httpErrors.Forbidden(
             `You can only post once every 15 days on the FREE plan.`
@@ -50,35 +76,10 @@ const accessChecker = async (userId) => {
           );
         }
       }
-
-      // Time-Based Limits (Basic & Starter)
-      if (["Basic", "Starter"].includes(planName)) {
-        const lastPost = postsByUser[0];
-        if (lastPost) {
-          const differenceInDays = dayjs().diff(
-            dayjs(lastPost.createdAt),
-            "day"
-          );
-          let allowedInterval = 0;
-          if (planName === "Basic") {
-            allowedInterval = 7;
-          } else if (planName === "Starter") {
-            allowedInterval = 14;
-          }
-
-          if (differenceInDays < allowedInterval) {
-            throw httpErrors.Forbidden(
-              `You can only post once every ${allowedInterval} days on the ${planName} plan.`
-            );
-          }
-        }
-      }
     }
 
-    // 5. Allow Access
-    return true;
+    return;
   } catch (error) {
-    console.error("Access check failed:", error);
     throw error;
   }
 };

@@ -71,12 +71,6 @@ const UserSchema = new Schema(
     },
     //update this , when webhook is called
     subscriptionPlan: {
-      plan: {
-        type: String,
-        required: false,
-        enum: ["free", "basic", "starter", "pro", "elite", "business"],
-        default: "free",
-      },
       planId: {
         type: String,
         required: false,
@@ -84,56 +78,6 @@ const UserSchema = new Schema(
       amount: {
         type: Number,
         required: false,
-      },
-      currency: {
-        type: String,
-        required: false,
-        default: "AED",
-      },
-      interval: {
-        type: String,
-        enum: ["day", "week", "month", "year"],
-        required: true,
-      },
-      interval_count: {
-        type: Number,
-        required: true,
-      },
-      // Duration in days
-      // This field is used to determine the duration of the subscription
-      // ex: 7 days, 14 days, 30 days, etc.
-      duration: {
-        type: Number,
-        required: true,
-      },
-
-      numberOfAds: {
-        type: Number,
-        required: true,
-      },
-
-      featuredAdBoosts: {
-        type: Number,
-        default: 0, // Number of "Featured Ad Boosts" included
-      },
-
-      isVerifiedBadge: {
-        type: Boolean,
-        default: false,
-      },
-      prioritySupport: {
-        type: Boolean,
-        default: false,
-      },
-      premiumSupport: {
-        type: Boolean,
-        default: false,
-      },
-      additionalBenefits: [{ type: String }],
-      //if admin can temporarily disable the plan
-      isActive: {
-        type: Boolean,
-        default: true,
       },
     },
     //update this , when webhook is called

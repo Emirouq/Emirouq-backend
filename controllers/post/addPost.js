@@ -50,9 +50,12 @@ const addPost = async (req, res, next) => {
 
     const draftMode = isDraft?.[0];
 
-    //to check for free users
-
-    accessChecker(userId);
+    //to check for the access of the user to create a post.
+    try {
+      await accessChecker(userId);
+    } catch (error) {
+      throw new Error(error?.message);
+    }
 
     if (!draftMode) {
       if (!title) throw httpErrors.BadRequest("Title is required");

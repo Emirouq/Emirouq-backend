@@ -1,3 +1,4 @@
+const { DateTime } = require("luxon");
 const { Schema, model, Types } = require("mongoose");
 
 const userSubscriptionModelSchema = new Schema({
@@ -35,15 +36,66 @@ const userSubscriptionModelSchema = new Schema({
       type: String,
       required: true,
     },
+    name: {
+      type: String,
+      required: true,
+      enum: ["Basic", "Starter", "Pro", "Elite", "Business"],
+    },
     amount: {
       type: Number,
       required: true,
     },
-  },
+    currency: {
+      type: String,
+      required: true,
+    },
+    interval: {
+      type: String,
+      enum: ["day", "week", "month", "year"],
+      required: true,
+    },
+    interval_count: {
+      type: Number,
+      required: true,
+    },
+    // Duration in days
+    // This field is used to determine the duration of the subscription
+    // ex: 7 days, 14 days, 30 days, etc.
+    duration: {
+      type: Number,
+      required: true,
+    },
 
-  validTill: {
+    numberOfAds: {
+      type: Number,
+      required: true,
+    },
+
+    featuredAdBoosts: {
+      type: Number,
+      default: 0, // Number of "Featured Ad Boosts" included
+    },
+
+    isVerifiedBadge: {
+      type: Boolean,
+      default: false,
+    },
+    prioritySupport: {
+      type: Boolean,
+      default: false,
+    },
+    premiumSupport: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  startDate: {
     type: Date,
-    required: true,
+    required: false,
+  },
+  endDate: {
+    type: Date,
+    required: false,
   },
   status: {
     type: String,
