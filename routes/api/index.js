@@ -5,6 +5,7 @@ router.use("/auth", require("./Auth.route"));
 router.use("/stripe", require("./Stripe.route"));
 
 const jwtValidation = require("../../middlewares/jwt_validation");
+const { accessChecker } = require("../../middlewares/access_checker");
 
 router.use("/me", jwtValidation, require("../../controllers/me/getMe"));
 router.use(
@@ -21,7 +22,7 @@ router.use(
   jwtValidation,
   require("./SubCategory.route")
 );
-router.use("/post", jwtValidation, require("./Post.route"));
+router.use("/post", jwtValidation, accessChecker, require("./Post.route"));
 router.use("/conversation", jwtValidation, require("./Conversation.route"));
 
 module.exports = router;

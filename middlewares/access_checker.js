@@ -1,13 +1,12 @@
 const dayjs = require("dayjs");
 const httpErrors = require("http-errors");
-const Post = require("../../models/Post.model");
-const User = require("../../models/User.model");
-const SubscriptionPlan = require("../../models/SubscriptionPlan.model");
-const UserSubscription = require("../../models/UserSubscription.model");
+const Post = require("../models/Post.model");
+const UserSubscription = require("../models/UserSubscription.model");
 
-const accessChecker = async (userId) => {
+const accessChecker = async (req, res, next) => {
   try {
     // 1. Get subscription details (using userId)
+    const { uuid: userId } = req.user;
     const subscription = await UserSubscription.findOne({ user: userId });
 
     let planName = "free";
@@ -80,7 +79,7 @@ const accessChecker = async (userId) => {
 
     return;
   } catch (error) {
-    throw error;
+    next(error);
   }
 };
 

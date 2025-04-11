@@ -3,7 +3,7 @@ const Post = require("../../models/Post.model");
 const formidable = require("formidable");
 const { v4: uuid } = require("uuid");
 const { upload } = require("../../services/util/upload-files");
-const { accessChecker } = require("../../services/post/access_checker");
+const { accessChecker } = require("../../middlewares/access_checker");
 
 const uploadFilesToAws = async (files, folderName) => {
   const uploadedFiles = [];
@@ -51,11 +51,6 @@ const addPost = async (req, res, next) => {
     const draftMode = isDraft?.[0];
 
     //to check for the access of the user to create a post.
-    try {
-      await accessChecker(userId);
-    } catch (error) {
-      throw new Error(error?.message);
-    }
 
     if (!draftMode) {
       if (!title) throw httpErrors.BadRequest("Title is required");
