@@ -57,12 +57,6 @@ const PostSchema = new Schema(
         value: { type: String, required: true },
       },
     ],
-    // for Homepage Spotlight plan , we will update the post visibility
-    visibility: {
-      enum: ["basic", "featured", "higher"],
-      type: String,
-      default: "basic",
-    },
     expirationDate: {
       type: Number,
     },
@@ -71,9 +65,50 @@ const PostSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    //for free users, we will set the plan to free else name of the plan
-    plan: {
+    addOns: [
+      {
+        type: {
+          // Determines the type of add-on
+          type: String,
+          enum: ["featured", "urgent", "spotlight"],
+          required: true,
+        },
+        durationDays: {
+          // How long the add-on is active
+          type: Number,
+          required: true,
+        },
+        price: {
+          // The price for the add-on
+          type: Number,
+          required: true,
+        },
+        startDate: {
+          // When the add-on became active
+          type: Date,
+          default: Date.now,
+        },
+        endDate: {
+          // End Date of add-on
+          type: Date,
+        },
+        // Optional field for "Spotlight" ads to indicate placement details
+        spotlightPriority: {
+          type: String,
+          enum: ["basic", "higher"], // As discussed earlier, use priority
+          default: "basic",
+        },
+      },
+    ],
+    // Visibility is determined by add-ons
+    isVisible: {
+      type: Boolean,
+      default: true,
+    },
+    adType: {
       type: String,
+      enum: ["free", "paid"],
+      default: "free",
     },
   },
   { timestamps: true }

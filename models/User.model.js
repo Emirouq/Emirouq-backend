@@ -63,69 +63,39 @@ const UserSchema = new Schema(
         type: String,
       },
     ],
-    // user post visibility will be set to featured
-    isFeatured: {
+    subscription: {
+      type: String,
+      ref: "Subscription",
+      default: null,
+    },
+    subscriptionPlan: {
+      type: String,
+      ref: "SubscriptionPlan",
+      default: null,
+    },
+
+    freeAdCredits: {
+      type: Number,
+      default: 1,
+    },
+
+    referralCredits: {
+      type: Number,
+      default: 0,
+    },
+
+    loyaltyPoints: {
+      type: Number,
+      default: 0,
+    },
+
+    loyaltyTier: {
+      type: String,
+      default: "basic",
+    },
+    isBusinessAccount: {
       type: Boolean,
       default: false,
-    },
-    // user is verified
-    isVerified: {
-      type: Boolean,
-      default: false,
-    },
-    //to allow user to add a urgent tag to their post
-    urgentTag: {
-      type: Boolean,
-      default: false,
-    },
-    // we will set the post visibility to higher
-    homePageSpotlight: {
-      type: Boolean,
-      default: false,
-    },
-    plans: {
-      subscription: {
-        plan: {
-          type: String,
-          default: "free",
-        },
-        duration: {
-          type: String,
-        },
-        numberOfAds: {
-          type: Mixed,
-          default: 1,
-        },
-        price: {
-          type: Number,
-        },
-        currency: {
-          type: String,
-        },
-        featureAdBoost: {
-          type: Boolean,
-          default: false,
-        },
-        numberOfBoost: {
-          type: Number,
-        },
-        visibility: {
-          enum: ["basic", "featured", "higher"],
-          type: String,
-        },
-        prioritySupport: {
-          type: Boolean,
-          default: false,
-        },
-        premiumSupport: {
-          type: Boolean,
-          default: false,
-        },
-        verified: {
-          type: Boolean,
-          default: false,
-        },
-      },
     },
   },
   { timestamps: true }
