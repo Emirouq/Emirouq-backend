@@ -25,6 +25,11 @@ const CategorySchema = new Schema(
     //     required: true,
     //   },
     // ],
+    planId: [
+      {
+        type: String,
+      },
+    ],
   },
   { timestamps: true }
 );

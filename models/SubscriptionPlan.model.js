@@ -1,6 +1,11 @@
 const { Schema, model } = require("mongoose");
 
 const subscriptionPlanSchema = Schema({
+  uuid: {
+    type: String,
+    required: true,
+    unique: true,
+  },
   name: {
     type: String,
     required: true,
@@ -36,7 +41,7 @@ const subscriptionPlanSchema = Schema({
   // Duration in days
   // This field is used to determine the duration of the subscription
   // ex: 7 days, 14 days, 30 days, etc.
-  durationDays: {
+  duration: {
     type: Number,
     required: true,
   },

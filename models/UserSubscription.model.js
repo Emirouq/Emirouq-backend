@@ -1,6 +1,11 @@
 const { Schema, model, Types } = require("mongoose");
 
 const userSubscriptionModelSchema = new Schema({
+  uuid: {
+    type: String,
+    required: true,
+    unique: true,
+  },
   user: {
     type: String,
     ref: "User",
@@ -26,7 +31,14 @@ const userSubscriptionModelSchema = new Schema({
   // since if we change the plan in the future, we need to know
   // which plan the user subscribed to
   subscriptionPlan: {
-    type: Object,
+    planId: {
+      type: String,
+      required: true,
+    },
+    amount: {
+      type: Number,
+      required: true,
+    },
   },
 
   validTill: {

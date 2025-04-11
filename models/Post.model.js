@@ -73,7 +73,7 @@ const PostSchema = new Schema(
           enum: ["featured", "urgent", "spotlight"],
           required: true,
         },
-        durationDays: {
+        duration: {
           // How long the add-on is active
           type: Number,
           required: true,

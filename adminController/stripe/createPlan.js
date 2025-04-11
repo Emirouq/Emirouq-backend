@@ -2,7 +2,7 @@ const { default: mongoose } = require("mongoose");
 const SubscriptionPlan = require("../../models/SubscriptionPlan.model");
 const stripe = require("../../services/stripe/getStripe");
 const { round } = require("lodash");
-
+const { v4: uuid } = require("uuid");
 // const plans = [
 //   {
 //     name: "Basic",
@@ -118,22 +118,26 @@ const createPlan = async (req, res, next) => {
       });
     }
     //then create a subscription plan in our db
-    await SubscriptionPlan.create({
-      name,
-      productId: product?.id,
-      planId: plan?.id,
-      amount,
-      currency,
-      interval,
-      interval_count,
-      durationDays: duration[interval] * interval_count,
-      numberOfAds,
-      featuredAdBoosts,
-      isVerifiedBadge,
-      prioritySupport,
-      premiumSupport,
-      additionalBenefits,
-    });
+    await SubscriptionPlan.create(
+      {
+        uuid: uuid(),
+        name,
+        productId: product?.id,
+        planId: plan?.id,
+        amount,
+        currency,
+        interval,
+        interval_count,
+        duration: duration[interval] * interval_count,
+        numberOfAds,
+        featuredAdBoosts,
+        isVerifiedBadge,
+        prioritySupport,
+        premiumSupport,
+        additionalBenefits,
+      },
+      { session }
+    );
     //then commit the session
     await session.commitTransaction();
     res.status(200).json({

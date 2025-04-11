@@ -63,36 +63,46 @@ const UserSchema = new Schema(
         type: String,
       },
     ],
+    //update this , when webhook is called
     subscription: {
       type: String,
       ref: "Subscription",
       default: null,
     },
+    //update this , when webhook is called
     subscriptionPlan: {
-      type: String,
-      ref: "SubscriptionPlan",
-      default: null,
+      planId: {
+        type: String,
+        required: true,
+      },
+      amount: {
+        type: Number,
+        required: true,
+      },
     },
-
+    //update this , when webhook is called
     freeAdCredits: {
       type: Number,
       default: 1,
     },
+    //update this , when webhook is called
 
     referralCredits: {
       type: Number,
       default: 0,
     },
+    //update this , when webhook is called
 
     loyaltyPoints: {
       type: Number,
       default: 0,
     },
-
+    //update this , when webhook is called
     loyaltyTier: {
       type: String,
       default: "basic",
     },
+    //update this , when webhook is called
     isBusinessAccount: {
       type: Boolean,
       default: false,

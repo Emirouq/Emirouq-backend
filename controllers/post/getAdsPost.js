@@ -13,15 +13,15 @@ const getAdsPost = async (req, res, next) => {
         $match: {
           userId,
           ...searchCriteria,
-          $or: [
-            {
-              isExpired: false,
-            },
-            //for free users
-            {
-              expirationDate: { $gt: Date.now() },
-            },
-          ],
+          // $or: [
+          //   {
+          //     isExpired: false,
+          //   },
+          //   //for free users
+          //   {
+          //     expirationDate: { $gt: Date.now() },
+          //   },
+          // ],
         },
       },
       {
