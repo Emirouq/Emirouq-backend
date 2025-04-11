@@ -6,11 +6,11 @@ const getSubscriptionPlanList = require("../../adminController/stripe/getSubscri
 const updatePlan = require("../../adminController/stripe/updatePlan");
 
 // create plan route
-router.post("/", createPlan);
+router.post("/create-plan", createPlan);
 // get subscription plan list route
-router.get("/", getSubscriptionPlanList);
+router.get("/plan-list", getSubscriptionPlanList);
 // update plan route
-router.put("/:id", updatePlan);
+router.put("/plan/:id", updatePlan);
 
 // webhooks route
 

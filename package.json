@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon index.js",
-    "dev": "source $HOME/.nvm/nvm.sh; nvm use 18; redis-server;  nodemon index.js",
+    "dev": "source $HOME/.nvm/nvm.sh; nvm use 18;yarn; redis-server;  nodemon index.js",
     "lint": "eslint . --ext=js --fix;  exit 0"
   },
   "author": "",

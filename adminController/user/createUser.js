@@ -5,7 +5,6 @@ const User = require("../../models/User.model");
 const { hashPassword } = require("../../helpers/bcrypt");
 const AccountModel = require("../../models/Account.model");
 const stripe = require("../../services/stripe/getStripe");
-const { registerSnapTradeUser } = require("../../utils/SnapTrade.util");
 
 const createUser = async (req, res, next) => {
   try {

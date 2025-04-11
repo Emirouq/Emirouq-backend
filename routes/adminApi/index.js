@@ -5,6 +5,6 @@ const router = require("express").Router();
 const jwtValidation = require("../../middlewares/jwt_validation");
 
 router.use("/user", jwtValidation, require("./User.route"));
-router.use("/stripe", jwtValidation, require("./Stripe.route"));
+router.use("/stripe", require("./Stripe.route"));
 
 module.exports = router;
