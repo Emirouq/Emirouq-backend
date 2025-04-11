@@ -61,6 +61,7 @@ const subscriptionPlanSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  additionalBenefits: [{ type: String }],
   //if admin can temporarily disable the plan
   isActive: {
     type: Boolean,

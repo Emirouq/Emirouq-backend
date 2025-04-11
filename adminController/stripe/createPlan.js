@@ -25,6 +25,7 @@ const createPlan = async (req, res, next) => {
       isVerifiedBadge,
       prioritySupport,
       premiumSupport,
+      additionalBenefits,
     } = req.body;
 
     //first create a product
@@ -56,6 +57,7 @@ const createPlan = async (req, res, next) => {
       isVerifiedBadge,
       prioritySupport,
       premiumSupport,
+      additionalBenefits,
     });
 
     res.status(200).json({
