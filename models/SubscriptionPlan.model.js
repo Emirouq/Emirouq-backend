@@ -2,9 +2,38 @@ const subscriptionPlanSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    enum: ["basic", "started", "pro", "elite", "business"],
+    enum: ["Basic", "Starter", "Pro", "Elite", "Business"],
   },
-
+  // Stripe product ID
+  productId: {
+    type: String,
+    required: true,
+  },
+  // Stripe plan ID
+  planId: {
+    type: String,
+    required: true,
+  },
+  amount: {
+    type: Number,
+    required: true,
+  },
+  currency: {
+    type: String,
+    required: true,
+  },
+  interval: {
+    type: String,
+    enum: ["day", "week", "month", "year"],
+    required: true,
+  },
+  interval_count: {
+    type: Number,
+    required: true,
+  },
+  // Duration in days
+  // This field is used to determine the duration of the subscription
+  // ex: 7 days, 14 days, 30 days, etc.
   durationDays: {
     type: Number,
     required: true,
@@ -15,39 +44,27 @@ const subscriptionPlanSchema = new mongoose.Schema({
     required: true,
   },
 
-  price: {
-    type: Number,
-    required: true,
-  },
-  currency: {
-    type: String,
-  },
-
   featuredAdBoosts: {
     type: Number,
     default: 0, // Number of "Featured Ad Boosts" included
   },
 
-  additionalBenefits: {
-    type: [String], // Array of additional benefits
-    default: [],
-  },
   isVerifiedBadge: {
     type: Boolean,
     default: false,
   },
-  autoRenew: {
-    type: Boolean,
-    default: false,
-  },
-  listings: {
-    type: String,
-    enum: ["standard", "higher"],
-    default: "standard",
-  },
   prioritySupport: {
     type: Boolean,
     default: false,
+  },
+  premiumSupport: {
+    type: Boolean,
+    default: false,
+  },
+  //if admin can temporarily disable the plan
+  isActive: {
+    type: Boolean,
+    default: true,
   },
 });
 
