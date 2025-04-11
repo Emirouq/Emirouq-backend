@@ -76,7 +76,7 @@ subscriptionPlanSchema.index({ name: 1 });
 const SubscriptionPlan = model(
   "SubscriptionPlan",
   subscriptionPlanSchema,
-  "SubscriptionPlans"
+  "subscriptionPlans"
 );
 
 module.exports = SubscriptionPlan;
