@@ -57,14 +57,6 @@ const PostSchema = new Schema(
         value: { type: String, required: true },
       },
     ],
-    expirationDate: {
-      type: Number,
-    },
-    // when user plan get expired, we will set the post expired as true
-    isExpired: {
-      type: Boolean,
-      default: false,
-    },
     addOns: [
       {
         type: {
@@ -100,15 +92,20 @@ const PostSchema = new Schema(
         },
       },
     ],
-    // Visibility is determined by add-ons
-    isVisible: {
-      type: Boolean,
-      default: true,
-    },
+
     adType: {
       type: String,
       enum: ["free", "paid"],
       default: "free",
+    },
+    expirationDate: {
+      type: Number,
+      required: true,
+    },
+    // when user plan get expired, we will set the post expired as true
+    isExpired: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }
