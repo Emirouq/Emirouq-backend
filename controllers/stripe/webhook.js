@@ -4,7 +4,7 @@ const Transaction = require("../../models/Transaction.model");
 const dayjs = require("dayjs");
 const { v4: uuid } = require("uuid");
 
-const webhooks = async (req, res) => {
+const webhook = async (req, res) => {
   let data;
   // making a user variable here because individual switch cases do not have block scopes
   let user;
@@ -53,4 +53,4 @@ const webhooks = async (req, res) => {
   res.sendStatus(200);
 };
 
-module.exports = webhooks;
+module.exports = webhook;
