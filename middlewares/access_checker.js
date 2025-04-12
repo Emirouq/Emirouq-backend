@@ -74,7 +74,10 @@ const accessChecker = async (userId, subscription) => {
     } else {
       //For the Non Free user will verify this access rules.
       if (planName !== "Business") {
-        if (postsByUser?.length > numberOfAdsAllowed) {
+        // i am adding +1 , since the user is creating a new post.
+        // ex:  if the user has 2 posts, and he is creating a new one, then the total will be 3.
+        // so we need to check if the user has reached the limit.
+        if (postsByUser?.length + 1 >= numberOfAdsAllowed) {
           throw httpErrors.Forbidden(
             `You have reached your limit of ${numberOfAdsAllowed} ads for the ${planName} plan.`
           );
