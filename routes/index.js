@@ -2,9 +2,11 @@ const router = require("express").Router();
 
 const apiRoutes = require("./api");
 const adminRoutes = require("./adminApi");
+const webhooks = require("../controllers/stripe/webhooks");
 
 router.use("/admin/api", adminRoutes);
 router.use("/api", apiRoutes);
+router.post("/webhook", webhooks);
 
 router.get("/ping", (req, res) => {
   res.json({ success: "true", message: "successful request" });

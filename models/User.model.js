@@ -69,6 +69,11 @@ const UserSchema = new Schema(
       ref: "Subscription",
       default: null,
     },
+    // this is the customer id in stripe
+    customerId: {
+      type: String,
+      required: true,
+    },
     //update this , when webhook is called
     subscriptionPlan: {
       planId: {

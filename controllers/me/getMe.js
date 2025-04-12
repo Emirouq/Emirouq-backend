@@ -12,15 +12,16 @@ const getMe = async (req, res, next) => {
     if (!existingUser?.isActive) {
       throw new httpErrors.Unauthorized("User is not active");
     }
-    // if (!existingUser?.stripe?.customerId) {
-    //   // create stripe customer
-    //   const customer = await stripe.customers.create({
-    //     email: existingUser.email,
-    //     name: `${existingUser.firstName} ${existingUser.lastName}`,
-    //   });
-    //   existingUser.stripe.customerId = customer.id;
-    //   await existingUser.save();
-    // }
+    if (!existingUser?.customerId) {
+      // create stripe customer
+      const customer = await stripe.customers.create({
+        email: existingUser.email,
+        name: existingUser.firstName,
+      });
+      existingUser.customerId = customer.id;
+      existingUser.fullName = customer.firstName + " " + customer.lastName;
+      await existingUser.save();
+    }
 
     const [user] = await User.aggregate([
       {

@@ -11,6 +11,7 @@ router.post("/create-plan", createPlan);
 router.get("/plan-list", getSubscriptionPlanList);
 // update plan route
 router.put("/plan/:id", updatePlan);
+// update plan route
 
 // webhooks route
 

@@ -1,7 +1,7 @@
 const router = require("express").Router();
 
 // bring in models and controllers
-const createCheckoutSession = require("../../controllers/stripe/createCheckoutSession");
+const paymentSheet = require("../../controllers/stripe/paymentSheet");
 const changeSubscription = require("../../controllers/stripe/changeSubscription");
 const getFutureInvoice = require("../../controllers/stripe/getFutureInvoice");
 const savePaymentMethod = require("../../controllers/stripe/savePaymentMethod");
@@ -11,13 +11,12 @@ const trialPeriodCheckout = require("../../controllers/stripe/trialPeriodCheckou
 const deletePaymentMethod = require("../../controllers/stripe/deletePaymentMethod");
 const changePaymentMethod = require("../../controllers/stripe/changePaymentMethod");
 const refundPayment = require("../../controllers/stripe/refundPayment");
-const webhooks = require("../../controllers/stripe/webhooks");
 // const roleCheck = require("../../middlewares/roleCheck");
 const jwtValidation = require("../../middlewares/jwt_validation");
 
 // get user details
-router.post("/session", jwtValidation, createCheckoutSession);
 router.post("/update/session", jwtValidation, changeSubscription);
+router.get("/payment-sheet/:planId", jwtValidation, paymentSheet);
 router.put("/cancel-next-billing", jwtValidation, cancelNextBilling);
 
 router.post("/subscription/trial", jwtValidation, trialPeriodCheckout);
@@ -30,6 +29,5 @@ router.post("/payment-method", jwtValidation, savePaymentMethod);
 router.post("/refund", jwtValidation, refundPayment);
 
 // webhooks route
-router.post("/webhooks", webhooks);
 
 module.exports = router;
