@@ -10,6 +10,7 @@ const cancelNextBilling = require("../../controllers/stripe/cancel_next_billing"
 const trialPeriodCheckout = require("../../controllers/stripe/trialPeriodCheckout");
 const deletePaymentMethod = require("../../controllers/stripe/deletePaymentMethod");
 const changePaymentMethod = require("../../controllers/stripe/changePaymentMethod");
+const checkSubscription = require("../../controllers/stripe/checkSubscription");
 const refundPayment = require("../../controllers/stripe/refundPayment");
 // const roleCheck = require("../../middlewares/roleCheck");
 const jwtValidation = require("../../middlewares/jwt_validation");
@@ -19,6 +20,7 @@ const createSubscription = require("../../controllers/stripe/createSubscription"
 router.post("/update/session", jwtValidation, changeSubscription);
 router.get("/payment-sheet/:planId", jwtValidation, paymentSheet);
 router.post("/subscription", jwtValidation, createSubscription);
+router.get("/check-subscription/:id", jwtValidation, checkSubscription);
 router.put("/cancel-next-billing", jwtValidation, cancelNextBilling);
 
 router.post("/subscription/trial", jwtValidation, trialPeriodCheckout);
