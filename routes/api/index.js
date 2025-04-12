@@ -22,7 +22,7 @@ router.use(
   jwtValidation,
   require("./SubCategory.route")
 );
-router.use("/post", jwtValidation, accessChecker, require("./Post.route"));
+router.use("/post", jwtValidation, require("./Post.route"));
 router.use("/conversation", jwtValidation, require("./Conversation.route"));
 
 module.exports = router;

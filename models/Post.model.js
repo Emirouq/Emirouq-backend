@@ -99,8 +99,8 @@ const PostSchema = new Schema(
       default: "free",
     },
     expirationDate: {
-      type: Number,
-      required: true,
+      type: Date,
+      required: false,
     },
     // when user plan get expired, we will set the post expired as true
     isExpired: {

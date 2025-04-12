@@ -3,49 +3,44 @@ const httpErrors = require("http-errors");
 const Post = require("../models/Post.model");
 const UserSubscription = require("../models/UserSubscription.model");
 
-const accessChecker = async (req, res, next) => {
+const accessChecker = async (userId, subscription) => {
   try {
     // 1. Get subscription details (using userId)
-    const { uuid: userId } = req.user;
-    const subscription = await UserSubscription.findOne({ user: userId });
 
     let planName = "free";
     let numberOfAdsAllowed = 1;
-    let durationDays = 0;
     let isFreePlan = true; // track if the user is on the free plan
+    let endDate = dayjs().add(15, "days").toISOString();
 
     //if the user has a subscription plan, get the details and update the variables.
     if (subscription?.subscriptionId) {
       const plan = subscription?.subscriptionPlan;
       planName = plan?.name;
       numberOfAdsAllowed = plan?.numberOfAds;
-      durationDays = plan?.duration;
-      isFreePlan = false; // User has a subscription plan, so they're not free
+      isFreePlan = false;
+      endDate = dayjs(subscription?.endDate).toISOString();
     }
 
     let startDate;
 
     // get the start date based on the plan type
     if (!isFreePlan && subscription?.subscriptionPlan?.startDate) {
-      startDate = dayjs(
-        subscription?.subscriptionPlan?.startDate
-      ).toISOString();
+      startDate = subscription?.subscriptionPlan?.startDate;
     } else {
       // For free plan, consider a rolling 15-day window from their last post
       const lastPost = await Post.findOne({ userId }).sort({ createdAt: -1 });
       if (!lastPost) {
-        return true;
+        return { endDate };
       }
       startDate = dayjs(lastPost?.createdAt).subtract(15, "day")?.toISOString();
     }
-    const endDate = dayjs().toISOString();
 
     // 2. Check Existing Posts (using userId)
     const postsByUser = await Post.find({
       userId,
       createdAt: {
-        $gte: startDate,
-        $lte: endDate,
+        $gte: dayjs(startDate).toDate(),
+        $lte: dayjs().toDate(),
       },
     }).sort({
       createdAt: -1,
@@ -77,9 +72,12 @@ const accessChecker = async (req, res, next) => {
       }
     }
 
-    return;
+    return {
+      endDate,
+    };
   } catch (error) {
-    next(error);
+    // Handle errors
+    throw new Error(error?.message);
   }
 };
 

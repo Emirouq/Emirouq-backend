@@ -4,6 +4,7 @@ const formidable = require("formidable");
 const { v4: uuid } = require("uuid");
 const { upload } = require("../../services/util/upload-files");
 const { accessChecker } = require("../../middlewares/access_checker");
+const UserSubscription = require("../../models/UserSubscription.model");
 
 const uploadFilesToAws = async (files, folderName) => {
   const uploadedFiles = [];
@@ -51,13 +52,20 @@ const addPost = async (req, res, next) => {
     const draftMode = isDraft?.[0];
 
     //to check for the access of the user to create a post.
-
+    const subscription = await UserSubscription.findOne({ user: userId });
+    let endDate;
     if (!draftMode) {
       if (!title) throw httpErrors.BadRequest("Title is required");
       if (!description) throw httpErrors.BadRequest("Description is required");
       if (!subCategory)
         throw httpErrors.BadRequest("Subcategory Id is required");
       if (!category) throw httpErrors.BadRequest("Category Id is required");
+
+      try {
+        ({ endDate } = await accessChecker(userId, subscription));
+      } catch (error) {
+        throw httpErrors.Forbidden(error?.message);
+      }
     }
 
     let parsedProperties = [];
@@ -98,6 +106,7 @@ const addPost = async (req, res, next) => {
       ...(location && { location: location[0] }),
       ...(condition && { condition: condition[0] }),
       file: uploadedFiles,
+      expirationDate: !draftMode ? endDate : null,
     });
 
     await newPost.save();
