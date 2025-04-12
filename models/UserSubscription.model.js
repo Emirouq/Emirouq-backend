@@ -90,11 +90,11 @@ const userSubscriptionModelSchema = new Schema({
     },
   },
   startDate: {
-    type: Date,
+    type: Number,
     required: false,
   },
   endDate: {
-    type: Date,
+    type: Number,
     required: false,
   },
   status: {

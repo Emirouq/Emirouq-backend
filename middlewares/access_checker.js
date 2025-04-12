@@ -10,7 +10,7 @@ const accessChecker = async (userId, subscription) => {
     let planName = "free";
     let numberOfAdsAllowed = 1;
     let isFreePlan = true; // track if the user is on the free plan
-    let endDate = dayjs().add(15, "days").toISOString();
+    let endDate = dayjs().add(15, "days").toDate();
 
     //if the user has a subscription plan, get the details and update the variables.
     if (subscription?.subscriptionId) {
@@ -18,28 +18,28 @@ const accessChecker = async (userId, subscription) => {
       planName = plan?.name;
       numberOfAdsAllowed = plan?.numberOfAds;
       isFreePlan = false;
-      endDate = dayjs(subscription?.endDate).toISOString();
+      endDate = dayjs.unix(subscription?.endDate).toDate();
     }
 
     let startDate;
 
     // get the start date based on the plan type
-    if (!isFreePlan && subscription?.subscriptionPlan?.startDate) {
-      startDate = subscription?.subscriptionPlan?.startDate;
+    if (!isFreePlan && subscription?.startDate) {
+      startDate = dayjs.unix(subscription?.startDate).toDate();
     } else {
       // For free plan, consider a rolling 15-day window from their last post
       const lastPost = await Post.findOne({ userId }).sort({ createdAt: -1 });
       if (!lastPost) {
         return { endDate };
       }
-      startDate = dayjs(lastPost?.createdAt).subtract(15, "day")?.toISOString();
+      startDate = dayjs(lastPost?.createdAt).subtract(15, "day")?.toDate();
     }
 
     // 2. Check Existing Posts (using userId)
     const postsByUser = await Post.find({
       userId,
       createdAt: {
-        $gte: dayjs(startDate).toDate(),
+        $gte: startDate,
         $lte: dayjs().toDate(),
       },
     }).sort({
@@ -64,7 +64,7 @@ const accessChecker = async (userId, subscription) => {
     } else {
       //For the Non Free user will verify this access rules.
       if (planName !== "Business") {
-        if (postsByUser?.length >= numberOfAdsAllowed) {
+        if (postsByUser?.length > numberOfAdsAllowed) {
           throw httpErrors.Forbidden(
             `You have reached your limit of ${numberOfAdsAllowed} ads for the ${planName} plan.`
           );
