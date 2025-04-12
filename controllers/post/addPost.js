@@ -52,7 +52,10 @@ const addPost = async (req, res, next) => {
     const draftMode = isDraft?.[0];
 
     //to check for the access of the user to create a post.
-    const subscription = await UserSubscription.findOne({ user: userId });
+    const subscription = await UserSubscription.findOne({
+      user: userId,
+      status: "active",
+    });
     let endDate;
     if (!draftMode) {
       if (!title) throw httpErrors.BadRequest("Title is required");
@@ -107,6 +110,7 @@ const addPost = async (req, res, next) => {
       ...(condition && { condition: condition[0] }),
       file: uploadedFiles,
       expirationDate: !draftMode ? endDate : null,
+      adType: subscription?.uuid ? "paid" : "free",
     });
 
     await newPost.save();

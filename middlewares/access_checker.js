@@ -1,7 +1,6 @@
 const dayjs = require("dayjs");
 const httpErrors = require("http-errors");
 const Post = require("../models/Post.model");
-const UserSubscription = require("../models/UserSubscription.model");
 
 const accessChecker = async (userId, subscription) => {
   try {
@@ -11,6 +10,7 @@ const accessChecker = async (userId, subscription) => {
     let numberOfAdsAllowed = 1;
     let isFreePlan = true; // track if the user is on the free plan
     let endDate = dayjs().add(15, "days").toDate();
+    adType = "free"; // default ad type
 
     //if the user has a subscription plan, get the details and update the variables.
     if (subscription?.subscriptionId) {
@@ -19,6 +19,7 @@ const accessChecker = async (userId, subscription) => {
       numberOfAdsAllowed = plan?.numberOfAds;
       isFreePlan = false;
       endDate = dayjs.unix(subscription?.endDate).toDate();
+      adType = "paid";
     }
 
     let startDate;
@@ -28,7 +29,13 @@ const accessChecker = async (userId, subscription) => {
       startDate = dayjs.unix(subscription?.startDate).toDate();
     } else {
       // For free plan, consider a rolling 15-day window from their last post
-      const lastPost = await Post.findOne({ userId }).sort({ createdAt: -1 });
+      const lastPost = await Post.findOne({
+        userId,
+        // check  for posts that are either pending or active
+        isExpired: false,
+        status: { $in: ["pending", "active"] },
+        adType: "free",
+      }).sort({ createdAt: -1 });
       if (!lastPost) {
         return { endDate };
       }
@@ -38,10 +45,13 @@ const accessChecker = async (userId, subscription) => {
     // 2. Check Existing Posts (using userId)
     const postsByUser = await Post.find({
       userId,
+      status: { $in: ["pending", "active"] },
+      isExpired: false,
       createdAt: {
         $gte: startDate,
         $lte: dayjs().toDate(),
       },
+      adType: adType,
     }).sort({
       createdAt: -1,
     });
