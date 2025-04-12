@@ -99,7 +99,7 @@ const userSubscriptionModelSchema = new Schema({
   },
   status: {
     type: String,
-    enum: ["active", "inactive"],
+    enum: ["active", "inactive", "canceled"],
     default: "active",
   },
   // this is the last fingerprint used to make a payment

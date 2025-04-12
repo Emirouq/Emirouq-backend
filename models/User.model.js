@@ -85,6 +85,11 @@ const UserSchema = new Schema(
         required: false,
       },
     },
+    subscriptionStatus: {
+      type: String,
+      enum: ["active", "inactive", "canceled"],
+      default: "inactive",
+    },
     //update this , when webhook is called
     freeAdCredits: {
       type: Number,

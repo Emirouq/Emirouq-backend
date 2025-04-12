@@ -78,13 +78,11 @@ const duration = {
 };
 
 const createPlan = async (req, res, next) => {
-  const session = await mongoose.startSession();
-
   try {
     const {
       name,
       amount,
-      currency,
+      currency = "AED",
       // day,week,month,year
       interval,
       // duration in days
@@ -100,59 +98,48 @@ const createPlan = async (req, res, next) => {
       additionalBenefits,
     } = req.body;
     //first create a session
-    session.startTransaction();
 
-    //first create a product
-    const product = await stripe.products.create({
-      name,
-    });
-    let plan;
-    if (product?.id) {
-      //then create a plan for that product
-      plan = await stripe.plans.create({
-        amount: round(+amount * 100, 0),
-        currency,
+    const price = await stripe.prices.create({
+      currency,
+      unit_amount: round(+amount * 100, 0),
+      recurring: {
         interval,
         interval_count,
-        product: product?.id,
-      });
-    }
-    //then create a subscription plan in our db
-    await SubscriptionPlan.create(
-      {
-        uuid: uuid(),
-        name,
-        productId: product?.id,
-        planId: plan?.id,
-        amount,
-        currency,
-        interval,
-        interval_count,
-        duration: duration[interval] * interval_count,
-        numberOfAds,
-        featuredAdBoosts,
-        isVerifiedBadge,
-        prioritySupport,
-        premiumSupport,
-        additionalBenefits,
       },
-      { session }
-    );
+      product_data: {
+        name,
+      },
+    });
+
+    //then create a subscription plan in our db
+    await SubscriptionPlan.create({
+      uuid: uuid(),
+      name,
+      productId: price.product,
+      priceId: price.id,
+      isActive: price?.active,
+      amount,
+      currency: price.currency,
+      interval: price.recurring.interval,
+      interval_count: price.recurring.interval_count,
+      duration:
+        duration[price.recurring.interval] * price.recurring.interval_count,
+      numberOfAds,
+      featuredAdBoosts,
+      isVerifiedBadge,
+      prioritySupport,
+      premiumSupport,
+      additionalBenefits,
+    });
     //then commit the session
-    await session.commitTransaction();
     res.status(200).json({
       success: true,
       message: "Plan created successfully",
     });
   } catch (error) {
-    //if any error occurs then rollback the session
-    if (session) {
-      await session.abortTransaction();
-    }
     console.error("Error creating plan:", error);
     next(error);
   } finally {
-    await session.endSession();
   }
 };
 

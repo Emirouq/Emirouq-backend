@@ -3,7 +3,11 @@ const UserModel = require("../../models/User.model");
 const Transaction = require("../../models/Transaction.model");
 const dayjs = require("dayjs");
 const { v4: uuid } = require("uuid");
-
+const {
+  invoicePaid,
+  chargeSuccess,
+  customerSubscriptionUpdated,
+} = require("../../services/stripe/webhooksEvents");
 const webhook = async (req, res) => {
   let data;
   // making a user variable here because individual switch cases do not have block scopes
@@ -29,10 +33,15 @@ const webhook = async (req, res) => {
     case "customer.subscription.created":
       break;
     case "customer.subscription.updated":
+      customerSubscriptionUpdated(data);
       break;
     case "checkout.session.completed":
       break;
+    case "charge.succeeded":
+      chargeSuccess(data);
+      break;
     case "invoice.paid":
+      invoicePaid(data);
       break;
     case "invoice.payment_failed":
       break;

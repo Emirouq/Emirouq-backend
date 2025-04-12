@@ -16,8 +16,8 @@ const subscriptionPlanSchema = Schema({
     type: String,
     required: true,
   },
-  // Stripe plan ID
-  planId: {
+  // Stripe price ID
+  priceId: {
     type: String,
     required: true,
   },
