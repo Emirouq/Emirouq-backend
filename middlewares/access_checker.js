@@ -10,7 +10,7 @@ const accessChecker = async (userId, subscription) => {
     let numberOfAdsAllowed = 1;
     let isFreePlan = true; // track if the user is on the free plan
     let endDate = dayjs().add(15, "days").toDate();
-    adType = "free"; // default ad type
+    let adType = "free"; // default ad type
 
     //if the user has a subscription plan, get the details and update the variables.
     if (subscription?.subscriptionId) {
@@ -77,7 +77,7 @@ const accessChecker = async (userId, subscription) => {
         // i am adding +1 , since the user is creating a new post.
         // ex:  if the user has 2 posts, and he is creating a new one, then the total will be 3.
         // so we need to check if the user has reached the limit.
-        if (postsByUser?.length + 1 >= numberOfAdsAllowed) {
+        if (postsByUser?.length >= numberOfAdsAllowed) {
           throw httpErrors.Forbidden(
             `You have reached your limit of ${numberOfAdsAllowed} ads for the ${planName} plan.`
           );

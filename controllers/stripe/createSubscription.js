@@ -3,6 +3,7 @@ const UserSubscription = require("../../models/UserSubscription.model");
 const SubscriptionPlan = require("../../models/SubscriptionPlan.model");
 const stripe = require("../../services/stripe/getStripe");
 const User = require("../../models/User.model");
+const { cancel } = require("agenda/dist/agenda/cancel");
 
 const createSubscription = async (req, res, next) => {
   const { uuid: user } = req.user;
@@ -35,6 +36,7 @@ const createSubscription = async (req, res, next) => {
       metadata: {
         priceId,
       },
+      cancel_at_period_end: true,
     });
 
     res.send({
