@@ -30,7 +30,8 @@ const Register = async (req, res, next) => {
         }
 
         let {
-          fullName,
+          firstName,
+          lastName,
           email,
           phoneNumber,
           password,
@@ -75,7 +76,7 @@ const Register = async (req, res, next) => {
           const checkIfPhoneExist = await UserModel.findOne({ phoneNumber });
           if (checkIfPhoneExist) {
             throw new httpErrors.Conflict(
-              "This phone number is already registered. Please try another one!"
+              "This phone number is already registered."
             );
           }
         }
@@ -110,18 +111,17 @@ const Register = async (req, res, next) => {
           );
           profileImage = uploadedFile.url;
         }
-
         const newUser = new UserModel({
           uuid: uuid(),
-          fullName: fullName[0],
-
+          firstName: firstName?.[0],
+          ...(lastName && { lastName: lastName?.[0] }),
           ...(email && { email }),
           ...(phoneNumber && { phoneNumber }),
           ...(bio && { bio }),
           password: hashedPassword,
           isActive: false,
           isEmail: email ? true : false,
-          profileImage,
+          ...(profileImage && { profileImage }),
           userInterest: userInterest || [],
         });
 

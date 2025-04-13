@@ -15,21 +15,20 @@ const UserSchema = new Schema(
       type: Number,
       // required: true,
     },
-    // firstName: {
-    //   type: String,
-    //   required: true,
-    // },
-    fullName: {
+    firstName: {
       type: String,
       required: true,
     },
-    profileImage: {
-      type: String,
-    },
-    // lastName: {
+    // fullName: {
     //   type: String,
     //   required: true,
     // },
+    profileImage: {
+      type: String,
+    },
+    lastName: {
+      type: String,
+    },
     isEmail: {
       type: Boolean,
       default: false,
@@ -72,7 +71,7 @@ const UserSchema = new Schema(
     // this is the customer id in stripe
     customerId: {
       type: String,
-      required: true,
+      // required: true,
     },
     //update this , when webhook is called
     subscriptionPlan: {

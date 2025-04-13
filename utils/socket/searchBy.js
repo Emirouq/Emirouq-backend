@@ -1,10 +1,13 @@
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 dayjs.extend(utc);
-const searchBy = ({ status, keyword }) => {
+const searchBy = ({ status, keyword, userId }) => {
   let searchCriteria = {};
   if (status) {
     searchCriteria.status = status;
+  }
+  if (userId) {
+    searchCriteria.userId = userId;
   }
   if (keyword) {
     searchCriteria["$or"] = [

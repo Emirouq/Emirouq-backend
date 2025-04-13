@@ -2,16 +2,16 @@ const Post = require("../../models/Post.model");
 const { searchBy } = require("../../utils/socket/searchBy");
 const getAdsPost = async (req, res, next) => {
   try {
-    const { start, limit, status } = req.query;
-    const { uuid: userId } = req.user;
+    const { start, limit, status, userId } = req.query;
+    // const { uuid: userId } = req.user;
     // for search by status, result, tradeType, tags, keyword, startDate, endDate
     const searchCriteria = searchBy({
       status,
+      userId,
     });
     const data = await Post.aggregate([
       {
         $match: {
-          userId,
           ...searchCriteria,
           // $or: [
           //   {

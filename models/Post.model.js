@@ -37,7 +37,7 @@ const PostSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "draft", "active", "expired"],
+      enum: ["pending", "draft", "active", "expired", "rejected"],
       default: "pending",
     },
     location: {
