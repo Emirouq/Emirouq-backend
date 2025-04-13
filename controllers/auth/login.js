@@ -26,12 +26,17 @@ const login = async (req, res, next) => {
     // const userLogin = await User.findOne({
     //   $or: [{ email }, { phoneNumber }],
     // });
-    let userLogin = await User.findOne({ email });
+    let userLogin = await User.findOne({
+      email,
+      oauthId: {
+        $exists: false,
+        $eq: null,
+      },
+    });
 
     if (!userLogin) {
       userLogin = await User.findOne({ phoneNumber });
     }
-    console.log(11, userLogin);
     if (!userLogin) {
       throw createHttpError.BadRequest("Account not found. Please sign up.");
     }
