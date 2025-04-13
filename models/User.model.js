@@ -41,7 +41,7 @@ const UserSchema = new Schema(
 
     password: {
       type: String,
-      required: true,
+      required: false,
     },
     bio: {
       type: String,
@@ -56,6 +56,11 @@ const UserSchema = new Schema(
       required: true,
       enum: ["customer"],
       default: "customer",
+    },
+    oauthId: {
+      type: String,
+      enum: ["google", "facebook", "apple"],
+      default: "",
     },
     userInterest: [
       {

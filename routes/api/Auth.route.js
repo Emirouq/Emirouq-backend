@@ -8,6 +8,7 @@ const setupPassword = require("../../controllers/auth/setupPassword");
 const forgotPassword = require("../../controllers/auth/forgotPassword");
 const verifyOTP = require("../../controllers/auth/verifyOTP");
 const resetPassword = require("../../controllers/auth/resetPassword");
+const oauthLogin = require("../../controllers/auth/oauthLogin");
 const assumeLogin = require("../../controllers/auth/assume-login");
 router.post("/login", loginUser);
 router.post("/assume-login", assumeLogin);
@@ -18,5 +19,6 @@ router.put("/setup-password/", setupPassword);
 router.post("/forgotPassword", forgotPassword);
 router.post("/verifyotp/:token", verifyOTP);
 router.post("/resetpassword/:token", resetPassword);
+router.post("/oauth/", oauthLogin);
 
 module.exports = router;
