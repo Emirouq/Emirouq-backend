@@ -13,6 +13,7 @@ const conversationSchema = new Schema(
       required: true,
     },
     // uuid of the user who are in the conversation
+    //for socket event , for online offline status, this is used
     users: [
       {
         type: String,
@@ -25,6 +26,8 @@ const conversationSchema = new Schema(
       required: true,
     },
     // uuid of the user visible to the conversation
+    // this is used to check if the user is in the conversation or not
+    // this conversation is visible to the user who is in the visibleTo array
     visibleTo: [
       {
         type: String,
