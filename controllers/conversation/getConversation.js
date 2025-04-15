@@ -13,7 +13,7 @@ const getConversation = async (req, res, next) => {
       {
         $match: {
           ...searchCriteria,
-          users: {
+          visibleTo: {
             $in: [userId],
           },
         },

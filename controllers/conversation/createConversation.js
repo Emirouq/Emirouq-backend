@@ -13,6 +13,7 @@ const createConversation = async (req, res, next) => {
       return res.json({
         message: "Conversation already exists",
         data: checkConversation,
+        isExist: true,
       });
     }
 
@@ -27,10 +28,13 @@ const createConversation = async (req, res, next) => {
       })),
       lastMessageTime: date,
       lastMessage: null,
+      createdBy: req.user.uuid,
+      visibleTo: [req.user.uuid],
     });
     res.json({
       message: "Conversation created successfully",
       data: conversation,
+      isExist: false,
     });
   } catch (error) {
     next(error);

@@ -19,6 +19,19 @@ const conversationSchema = new Schema(
         required: true,
       },
     ],
+    // uuid of the user who created the conversation
+    createdBy: {
+      type: String,
+      required: true,
+    },
+    // uuid of the user visible to the conversation
+    visibleTo: [
+      {
+        type: String,
+        required: true,
+      },
+    ],
+
     status: {
       type: String,
       enum: ["open", "closed"],
