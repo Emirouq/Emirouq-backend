@@ -59,7 +59,7 @@ const UserSchema = new Schema(
     },
     oauthId: {
       type: String,
-      enum: ["google", "facebook", "apple"],
+      enum: ["google", "facebook", "apple", ""],
       default: "",
     },
     userInterest: [
