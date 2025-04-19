@@ -6,6 +6,7 @@ const { upload } = require("../../services/util/upload-files");
 const { sendEmail, generateOTP } = require("../../services/util/sendEmail");
 const ResetPasswordModal = require("../../models/ResetPassword.model");
 const UserModel = require("../../models/User.model");
+const registerTemplate = require("../../services/templates/register");
 
 const uploadFilesToAws = async (files, folderName) => {
   const location = files?.path || files?.filepath;
@@ -124,7 +125,13 @@ const Register = async (req, res, next) => {
           ...(profileImage && { profileImage }),
           userInterest: userInterest || [],
         });
-
+        if (email) {
+          await sendEmail(
+            [email],
+            `Welcome to Emirouq`,
+            registerTemplate({ name: `${firstName} ${lastName || ""}`, otp })
+          );
+        }
         await newUser.save();
 
         res.status(201).json({

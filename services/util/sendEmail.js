@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const nodemailer = require("nodemailer");
 const axios = require("axios");
+const { SendMailClient } = require("zeptomail");
 
 const { accessKeyId, secretAccessKey, region, sesSenderAddress } =
   require("../../config/keys").aws;
@@ -121,57 +122,27 @@ const sendAttachmentEmail = async (
 //     }
 //   });
 // };
-const sendEmail = (
-  recipients,
-  subject,
-  template
-  // address = "noreply@tradelizer.com"
-  // address = "noreply@tradelizer.com"
-) => {
+const sendEmail = (recipients, subject, template) => {
   return new Promise((resolve, reject) => {
     try {
-      const data = {
-        from: {
-          // address: "admin@tradelizer.com",
-          address,
-          name: "TradeLizer - No Reply",
-          // bcc: "support@tradelizer.com",
-        },
-        to: recipients?.map((i) => ({ email_address: { address: i } })),
-        cc: [
-          {
-            email_address: {
-              // address: "support@tradelizer.com",
-              name: "Support",
-            },
-            email_address: {
-              // address: "info@codekraftsolutions.com",
-              name: "Support",
-            },
+      const url = "api.zeptomail.com/";
+      const token =
+        "Zoho-enczapikey wSsVR610qBelX6ormjWvI7xqy11XD1LxQU4o3VL07HH0T63A/MdqkhHMUFKjG/VOEGFuEGca978szkpShzVfi9x+n1sCDCiF9mqRe1U4J3x17qnvhDzMWmRYlRSJL4wAwQ5jnWBkFM4h+g==";
+
+      let client = new SendMailClient({ url, token });
+
+      client
+        .sendMail({
+          from: {
+            address: "noreply@emirouq.ae",
+            name: "noreply",
           },
-        ],
-        subject,
-        htmlbody: template,
-      };
-      //surya
-      // https://api.zeptomail.in/v1.1/email
-      // joban
-      // https://api.zeptomail.ca/v1.1/email
-      // areeb
-      // https://api.zeptomail.in/v1.1/email
-      return axios
-        .post("https://api.zeptomail.ca/v1.1/email", data, {
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            Authorization: zeptoSecret,
-          },
+          to: recipients?.map((i) => ({ email_address: { address: i } })),
+          subject: subject,
+          htmlbody: template,
         })
-        .then(() => resolve())
-        .catch((error) => {
-          console.error("Error sending email:", error);
-          reject(error);
-        });
+        .then((resp) => resolve(resp))
+        .catch((error) => reject(error));
     } catch (error) {
       console.error("Error sending email:", error);
       return reject(error);
