@@ -2,13 +2,11 @@ const Chat = require("../../../models/Chat.model");
 const getMessageList = async (req, res, next) => {
   try {
     const { conversationId } = req.params;
-    const { start = 0, limit = 10 } = req.query;
-    const { uuid: userId } = req.user;
+    const { start = 0, limit = 100 } = req.query;
     const [chat] = await Chat.aggregate([
       {
         $match: {
           conversationId,
-          userId,
         },
       },
       {

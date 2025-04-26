@@ -36,6 +36,24 @@ const getConversation = async (req, res, next) => {
           },
         },
       },
+      {
+        $set: {
+          participant: {
+            $arrayElemAt: [
+              {
+                $filter: {
+                  input: "$participants",
+                  as: "user",
+                  cond: {
+                    $eq: ["$$user.user", userId],
+                  },
+                },
+              },
+              0,
+            ],
+          },
+        },
+      },
 
       {
         $lookup: {

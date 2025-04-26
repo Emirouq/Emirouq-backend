@@ -82,6 +82,22 @@ const Register = async (req, res, next) => {
           }
         }
 
+        if (checkIfPhoneExist) {
+          throw new httpErrors.Conflict(
+            "This phone number is already registered."
+          );
+        }
+        const checkIfEmailExistInOauth = await UserModel.findOne({
+          email,
+          oauthId: {
+            $exists: true,
+          },
+        });
+        if (checkIfEmailExistInOauth) {
+          throw new httpErrors.Conflict(
+            "This email is already registered with a social account. Please try another one!"
+          );
+        }
         if (password[0] !== confirmPassword[0]) {
           throw new httpErrors.BadRequest("Passwords do not match!");
         }
