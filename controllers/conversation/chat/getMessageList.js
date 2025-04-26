@@ -2,7 +2,7 @@ const Chat = require("../../../models/Chat.model");
 const getMessageList = async (req, res, next) => {
   try {
     const { conversationId } = req.params;
-    const { start = 0, limit = 100 } = req.query;
+    const { start = 0, limit = 25 } = req.query;
     const [chat] = await Chat.aggregate([
       {
         $match: {
@@ -31,12 +31,12 @@ const getMessageList = async (req, res, next) => {
           ],
         },
       },
-      {
-        $project: {
-          total: { $arrayElemAt: ["$total.total", 0] },
-          data: "$data",
-        },
-      },
+      // {
+      //   $project: {
+      //     total: { $arrayElemAt: ["$total.total", 0] },
+      //     data: "$data",
+      //   },
+      // },
     ]);
     res.json({
       success: true,

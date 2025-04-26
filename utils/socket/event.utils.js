@@ -128,25 +128,25 @@ const socketEvents = (io) => {
       //if the receiver is not in the conversation
       //here we are updating the last message time and the last message
       // and the count of the message for the sender and receiver
-      const senderRes = await Conversation.findOneAndUpdate(
-        { uuid: conversationId },
-        {
-          $set: {
-            lastMessage: message,
-            lastMessageTime: lastMessageTime,
-            "participants.$[elem].lastViewedTime": lastMessageTime,
-            "participants.$[elem].count": 0,
-          },
-        },
-        {
-          new: true,
-          arrayFilters: [
-            {
-              "elem.user": senderId,
-            },
-          ],
-        }
-      );
+      // const senderRes = await Conversation.findOneAndUpdate(
+      //   { uuid: conversationId },
+      //   {
+      //     $set: {
+      //       lastMessage: message,
+      //       lastMessageTime: lastMessageTime,
+      //       "participants.$[elem].lastViewedTime": lastMessageTime,
+      //       "participants.$[elem].count": 0,
+      //     },
+      //   },
+      //   {
+      //     new: true,
+      //     arrayFilters: [
+      //       {
+      //         "elem.user": senderId,
+      //       },
+      //     ],
+      //   }
+      // );
 
       let receiverRes;
       if (!userIsInConversation.includes(receiverId)) {
@@ -172,48 +172,39 @@ const socketEvents = (io) => {
             ],
           }
         );
-        //here we are updating the last message time and the last message for the receiver
-        io.to(receiverId).emit("update_conversation_cache", {
-          ...details,
-          conversationId,
-          lastMessage: message,
-          lastMessageTime: lastMessageTime,
-          ...(receiverRes && {
-            participant: receiverRes?.participants.find(
-              (user) => user.user === receiverId
-            ),
-          }),
-        });
       }
-      //if both users are in the conversation
-      if (
-        _.isEqual(
-          _.sortBy(userIsInConversation),
-          _.sortBy([senderId, receiverId])
-        )
-      ) {
-        //here we are updating the last message time and the last message for the sender and receiver
-        io.to(senderId).emit("update_conversation_cache", {
-          conversationId,
-          lastMessage: message,
-          lastMessageTime: lastMessageTime,
-          participant: {
-            user: senderId,
-            count: 0,
-            lastViewedTime: lastMessageTime,
-          },
-        });
-        io.to(receiverId).emit("update_conversation_cache", {
-          conversationId,
-          lastMessage: message,
-          lastMessageTime: lastMessageTime,
-          participant: {
-            user: receiverId,
-            count: 0,
-            lastViewedTime: lastMessageTime,
-          },
-        });
-      }
+      io.to(senderId).emit("update_conversation_cache", {
+        conversationId,
+        lastMessage: message,
+        lastMessageTime: lastMessageTime,
+        participant: {
+          user: senderId,
+          count: 0,
+          lastViewedTime: lastMessageTime,
+        },
+      });
+      //here we are updating the last message time and the last message for the receiver
+      io.to(receiverId).emit("update_conversation_cache", {
+        conversationId,
+        lastMessage: message,
+        lastMessageTime: lastMessageTime,
+        // user is not in the conversation
+        ...(receiverRes
+          ? {
+              participant: receiverRes?.participants.find(
+                (user) => user.user === receiverId
+              ),
+            }
+          : // receiver is in the conversation
+            {
+              participant: {
+                user: receiverId,
+                count: 0,
+                lastViewedTime: lastMessageTime,
+              },
+            }),
+      });
+
       // // add the message to the conversation on receiver side
       const messageData = buildMessage({
         conversationId,
