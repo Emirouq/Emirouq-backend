@@ -76,6 +76,8 @@ const socketEvents = (io) => {
       );
       io.to(userId).emit("update_conversation_cache", {
         conversationId,
+        firstConversation: false,
+
         participant: {
           user: userId,
           count: 0,
@@ -91,6 +93,7 @@ const socketEvents = (io) => {
       //sender id is the user id
       const { conversationId, message, senderId, receiverId, type, details } =
         data;
+      const lastMessageTime = dayjs().unix();
 
       // check if the conversationId is valid
       if (!conversationId) {
@@ -119,10 +122,18 @@ const socketEvents = (io) => {
         io.to(receiverId).emit("update_conversation_cache", {
           ...details,
           conversationId,
+          //this prop is passed to the client which signifies that this is the first time the user is joining the conversation
+          firstConversation: true,
+          lastMessage: message,
+          lastMessageTime: lastMessageTime,
+          participant: {
+            user: receiverId,
+            count: 1,
+            lastViewedTime: lastMessageTime,
+          },
         });
       }
       const userIsInConversation = await getUsersInRoom(conversationId);
-      const lastMessageTime = dayjs().unix();
 
       // here we are updating the last message time and the last message
       // and the count of the message for the sender and receiver
@@ -177,6 +188,7 @@ const socketEvents = (io) => {
         conversationId,
         lastMessage: message,
         lastMessageTime: lastMessageTime,
+        firstConversation: false,
         participant: {
           user: senderId,
           count: 0,
@@ -186,6 +198,8 @@ const socketEvents = (io) => {
       //here we are updating the last message time and the last message for the receiver
       io.to(receiverId).emit("update_conversation_cache", {
         conversationId,
+        firstConversation: false,
+
         lastMessage: message,
         lastMessageTime: lastMessageTime,
         // user is not in the conversation
