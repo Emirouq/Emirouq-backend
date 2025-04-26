@@ -74,7 +74,7 @@ const socketEvents = (io) => {
           ],
         }
       );
-      io.sockets.in(userId).emit("update_conversation_cache", {
+      io.to(userId).emit("update_conversation_cache", {
         conversationId,
         participant: {
           user: userId,
@@ -185,15 +185,35 @@ const socketEvents = (io) => {
           }),
         });
       }
-      //here we are updating the last message time and the last message for the sender
-      io.sockets.in(senderId).emit("update_conversation_cache", {
-        conversationId,
-        lastMessage: message,
-        lastMessageTime: lastMessageTime,
-        participant: senderRes?.participants.find(
-          (user) => user.user === senderId
-        ),
-      });
+      //if both users are in the conversation
+      if (
+        _.isEqual(
+          _.sortBy(userIsInConversation),
+          _.sortBy([senderId, receiverId])
+        )
+      ) {
+        //here we are updating the last message time and the last message for the sender and receiver
+        io.to(senderId).emit("update_conversation_cache", {
+          conversationId,
+          lastMessage: message,
+          lastMessageTime: lastMessageTime,
+          participant: {
+            user: senderId,
+            count: 0,
+            lastViewedTime: lastMessageTime,
+          },
+        });
+        io.to(receiverId).emit("update_conversation_cache", {
+          conversationId,
+          lastMessage: message,
+          lastMessageTime: lastMessageTime,
+          participant: {
+            user: receiverId,
+            count: 0,
+            lastViewedTime: lastMessageTime,
+          },
+        });
+      }
       // // add the message to the conversation on receiver side
       const messageData = buildMessage({
         conversationId,
