@@ -123,32 +123,32 @@ const socketEvents = (io) => {
       }
       const userIsInConversation = await getUsersInRoom(conversationId);
       const lastMessageTime = dayjs().unix();
-      //if both users are in the conversation
 
-      //if the receiver is not in the conversation
-      //here we are updating the last message time and the last message
+      // here we are updating the last message time and the last message
       // and the count of the message for the sender and receiver
-      // const senderRes = await Conversation.findOneAndUpdate(
-      //   { uuid: conversationId },
-      //   {
-      //     $set: {
-      //       lastMessage: message,
-      //       lastMessageTime: lastMessageTime,
-      //       "participants.$[elem].lastViewedTime": lastMessageTime,
-      //       "participants.$[elem].count": 0,
-      //     },
-      //   },
-      //   {
-      //     new: true,
-      //     arrayFilters: [
-      //       {
-      //         "elem.user": senderId,
-      //       },
-      //     ],
-      //   }
-      // );
+      await Conversation.findOneAndUpdate(
+        { uuid: conversationId },
+        {
+          $set: {
+            lastMessage: message,
+            lastMessageTime: lastMessageTime,
+            "participants.$[elem].lastViewedTime": lastMessageTime,
+            "participants.$[elem].count": 0,
+          },
+        },
+        {
+          new: true,
+          arrayFilters: [
+            {
+              "elem.user": senderId,
+            },
+          ],
+        }
+      );
 
       let receiverRes;
+      //if the receiver is not in the conversation
+
       if (!userIsInConversation.includes(receiverId)) {
         receiverRes = await Conversation.findOneAndUpdate(
           { uuid: conversationId },
