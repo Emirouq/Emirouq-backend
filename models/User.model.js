@@ -67,6 +67,7 @@ const UserSchema = new Schema(
         type: String,
       },
     ],
+    favourites: [{ type: String, ref: "posts" }],
     //update this , when webhook is called
     subscription: {
       type: String,

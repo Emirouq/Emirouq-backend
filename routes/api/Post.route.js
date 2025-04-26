@@ -7,6 +7,8 @@ const getAdsPost = require("../../controllers/post/getAdsPost");
 const updatePost = require("../../controllers/post/updatePost");
 const updatePostStatus = require("../../controllers/post/updatePostStatus");
 const jwtValidation = require("../../middlewares/jwt_validation");
+const addToFavourite = require("../../controllers/post/addToFavourite");
+const getFavouritePosts = require("../../controllers/post/getFavouritePosts");
 
 router.post("/", jwtValidation, addPost);
 router.get("/", getPosts);
@@ -14,5 +16,6 @@ router.get("/list", getAdsPost);
 router.get("/:id", getSinglePost);
 router.put("/updateStatus/:id", jwtValidation, updatePostStatus);
 router.put("/updatePost/:id", jwtValidation, updatePost);
-
+router.get("/favourite/get", jwtValidation, getFavouritePosts);
+router.put("/favourite/:id", jwtValidation, addToFavourite);
 module.exports = router;
