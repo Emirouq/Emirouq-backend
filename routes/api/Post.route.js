@@ -11,7 +11,7 @@ const jwtValidation = require("../../middlewares/jwt_validation");
 router.post("/", jwtValidation, addPost);
 router.get("/", getPosts);
 router.get("/list", getAdsPost);
-router.get("/:id", jwtValidation, getSinglePost);
+router.get("/:id", getSinglePost);
 router.put("/updateStatus/:id", jwtValidation, updatePostStatus);
 router.put("/updatePost/:id", jwtValidation, updatePost);
 
