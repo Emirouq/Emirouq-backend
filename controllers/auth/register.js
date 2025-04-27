@@ -81,12 +81,6 @@ const Register = async (req, res, next) => {
             );
           }
         }
-
-        if (checkIfPhoneExist) {
-          throw new httpErrors.Conflict(
-            "This phone number is already registered."
-          );
-        }
         const checkIfEmailExistInOauth = await UserModel.findOne({
           email,
           oauthId: {
