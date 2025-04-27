@@ -95,7 +95,7 @@ const Register = async (req, res, next) => {
         if (password[0] !== confirmPassword[0]) {
           throw new httpErrors.BadRequest("Passwords do not match!");
         }
-
+        console.log("password", password);
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password[0], salt);
 

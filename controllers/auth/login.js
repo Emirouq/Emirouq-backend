@@ -46,7 +46,7 @@ const login = async (req, res, next) => {
         "Account not active. Please contact support."
       );
     }
-
+    console.log("password", password, userLogin.password);
     const isPasswordCorrect = await comparePassword(
       password,
       userLogin.password
