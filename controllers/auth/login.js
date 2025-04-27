@@ -22,7 +22,6 @@ const login = async (req, res, next) => {
     password = typeof password === "string" ? password : password?.[0];
 
     if (email) email = email.trim().toLowerCase();
-    console.log("email", email);
 
     // const userLogin = await User.findOne({
     //   $or: [{ email }, { phoneNumber }],
@@ -35,8 +34,11 @@ const login = async (req, res, next) => {
       },
     });
 
-    if (!userLogin) {
+    if (!userLogin && phoneNumber) {
       userLogin = await User.findOne({ phoneNumber });
+    }
+    if (!userLogin && email) {
+      userLogin = await User.findOne({ email });
     }
     if (!userLogin) {
       throw createHttpError.BadRequest("Account not found. Please sign up.");
