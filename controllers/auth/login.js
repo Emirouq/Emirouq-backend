@@ -19,6 +19,7 @@ const login = async (req, res, next) => {
     if (!email && !phoneNumber) {
       throw createHttpError.BadRequest("Email or phone number is required.");
     }
+    password = typeof password === "string" ? password : password?.[0];
 
     if (email) email = email.trim().toLowerCase();
     console.log("email", email);
