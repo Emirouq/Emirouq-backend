@@ -20,7 +20,7 @@ const getConversation = async (req, res, next) => {
       },
       {
         $set: {
-          user: {
+          receiver: {
             $arrayElemAt: [
               {
                 $filter: {
@@ -38,7 +38,7 @@ const getConversation = async (req, res, next) => {
       },
       {
         $set: {
-          participant: {
+          chatDetails: {
             $arrayElemAt: [
               {
                 $filter: {
@@ -58,13 +58,13 @@ const getConversation = async (req, res, next) => {
       {
         $lookup: {
           from: "user",
-          localField: "user",
+          localField: "receiver",
           foreignField: "uuid",
-          as: "user",
+          as: "receiver",
         },
       },
       {
-        $unwind: "$user",
+        $unwind: "$receiver",
       },
 
       {
@@ -80,7 +80,7 @@ const getConversation = async (req, res, next) => {
       },
       {
         $sort: {
-          updatedAt: -1,
+          lastMessageTime: -1,
         },
       },
       {

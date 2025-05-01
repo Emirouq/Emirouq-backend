@@ -10,6 +10,65 @@ const UserState = {
     this.users = newUsers;
   },
 };
+const getConversationDetails = async (conversationId, userId) => {
+  const [user] = await Conversation.aggregate([
+    {
+      $match: {
+        uuid: conversationId,
+      },
+    },
+    {
+      $set: {
+        receiver: {
+          $arrayElemAt: [
+            {
+              $filter: {
+                input: "$users",
+                as: "user",
+                cond: {
+                  $ne: ["$$user", userId],
+                },
+              },
+            },
+            0,
+          ],
+        },
+      },
+    },
+    {
+      $set: {
+        chatDetails: {
+          $arrayElemAt: [
+            {
+              $filter: {
+                input: "$participants",
+                as: "user",
+                cond: {
+                  $eq: ["$$user.user", userId],
+                },
+              },
+            },
+            0,
+          ],
+        },
+      },
+    },
+
+    {
+      $lookup: {
+        from: "user",
+        localField: "receiver",
+        foreignField: "uuid",
+        as: "receiver",
+      },
+    },
+    {
+      $unwind: "$receiver",
+    },
+  ]);
+  return user;
+};
+
 const socketEvents = (io) => {
   io?.on("connection", (socket) => {
     console.log(socket.id);
@@ -77,8 +136,7 @@ const socketEvents = (io) => {
       io.to(userId).emit("update_conversation_cache", {
         conversationId,
         firstConversation: false,
-
-        participant: {
+        chatDetails: {
           user: userId,
           count: 0,
           lastViewedTime,
@@ -91,7 +149,7 @@ const socketEvents = (io) => {
     //Listening to message event
     socket.on("message", async (data) => {
       //sender id is the user id
-      const { conversationId, message, senderId, receiverId, type, details } =
+      const { conversationId, message, senderId, receiverId, type, post } =
         data;
       const lastMessageTime = dayjs().unix();
 
@@ -101,7 +159,7 @@ const socketEvents = (io) => {
         return;
       }
       // check if the conversation exists
-      const conversation = await Conversation.findOne({
+      let conversation = await Conversation.findOne({
         uuid: conversationId,
         visibleTo: { $all: [senderId, receiverId] },
       });
@@ -117,16 +175,18 @@ const socketEvents = (io) => {
           },
           { new: true }
         );
+        conversation = await getConversationDetails(conversationId, receiverId);
 
         // add the sender to the conversation
         io.to(receiverId).emit("update_conversation_cache", {
-          ...details,
           conversationId,
           //this prop is passed to the client which signifies that this is the first time the user is joining the conversation
           firstConversation: true,
           lastMessage: message,
           lastMessageTime: lastMessageTime,
-          participant: {
+          post,
+          ...conversation,
+          chatDetails: {
             user: receiverId,
             count: 1,
             lastViewedTime: lastMessageTime,
@@ -189,7 +249,7 @@ const socketEvents = (io) => {
         lastMessage: message,
         lastMessageTime: lastMessageTime,
         firstConversation: false,
-        participant: {
+        chatDetails: {
           user: senderId,
           count: 0,
           lastViewedTime: lastMessageTime,
@@ -199,19 +259,18 @@ const socketEvents = (io) => {
       io.to(receiverId).emit("update_conversation_cache", {
         conversationId,
         firstConversation: false,
-
         lastMessage: message,
         lastMessageTime: lastMessageTime,
         // user is not in the conversation
         ...(receiverRes
           ? {
-              participant: receiverRes?.participants.find(
+              chatDetails: receiverRes?.participants.find(
                 (user) => user.user === receiverId
               ),
             }
           : // receiver is in the conversation
             {
-              participant: {
+              chatDetails: {
                 user: receiverId,
                 count: 0,
                 lastViewedTime: lastMessageTime,
@@ -230,6 +289,25 @@ const socketEvents = (io) => {
         message: messageData,
       });
       await ChatModel.create(messageData);
+    });
+
+    socket.on("update_conversation_cache", async (payload) => {
+      const { conversationId, userId, post } = payload;
+      if (!conversationId || !userId) {
+        console.log("no conversation id created");
+        return;
+      }
+      const conversation = await getConversationDetails(conversationId, userId);
+      if (!conversation) {
+        console.log("no conversation found");
+        return;
+      }
+      socket.emit("update_conversation_cache", {
+        ...conversation,
+        ...post,
+        conversationId,
+        firstConversation: true,
+      });
     });
 
     //Listen for typing event
@@ -258,7 +336,7 @@ const socketEvents = (io) => {
       socket.leave(conversationId);
       //remove user from room
       await redisClient.sRem(conversationId, userId);
-      console.log("User left");
+      console.log("User left conversation", conversationId);
     });
 
     // When the user disconnects - to all users

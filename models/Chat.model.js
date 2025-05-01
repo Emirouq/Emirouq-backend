@@ -33,7 +33,7 @@ const chatSchema = new Schema(
     },
     attachments: [
       {
-        url: {
+        uri: {
           type: String,
         },
         name: {
