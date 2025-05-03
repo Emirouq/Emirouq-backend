@@ -19,20 +19,20 @@ const chatSchema = new Schema(
     message: {
       type: String,
     },
-    type: {
-      type: String,
-      enum: ["text", "image", "video", "audio", "file"],
-      default: "text",
-    },
     isEdited: {
       type: Boolean,
       default: false,
     },
-    emoji: {
-      type: String,
-    },
+    emoji: [
+      {
+        type: String,
+      },
+    ],
     attachments: [
       {
+        uuid: {
+          type: String,
+        },
         uri: {
           type: String,
         },
@@ -42,6 +42,11 @@ const chatSchema = new Schema(
         type: {
           type: String,
         },
+        emoji: [
+          {
+            type: String,
+          },
+        ],
       },
     ],
   },

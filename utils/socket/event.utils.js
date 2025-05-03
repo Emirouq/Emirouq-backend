@@ -92,7 +92,6 @@ const socketEvents = (io) => {
     });
 
     //upon connection- only to user
-    socket.emit("message", "hello");
     socket.on("onlineUserList", async (cb) => {
       const onlineUsers = await getAllOnlineUsers();
       if (!!onlineUsers?.length) {
@@ -149,8 +148,15 @@ const socketEvents = (io) => {
     //Listening to message event
     socket.on("message", async (data) => {
       //sender id is the user id
-      const { conversationId, message, senderId, receiverId, type, post } =
-        data;
+      const {
+        conversationId,
+        message,
+        senderId,
+        receiverId,
+        type,
+        post,
+        attachments,
+      } = data;
       const lastMessageTime = dayjs().unix();
 
       // check if the conversationId is valid
@@ -284,11 +290,14 @@ const socketEvents = (io) => {
         user: senderId,
         message,
         type,
+        attachments,
       });
       io.to(receiverId).emit("message", {
         message: messageData,
       });
-      await ChatModel.create(messageData);
+      //if message then create the chat
+      // for attachments we have different service that saves the attachments in s3 and inserts the data in the db
+      if (message) await ChatModel.create(messageData);
     });
 
     socket.on("update_conversation_cache", async (payload) => {
@@ -353,6 +362,23 @@ const socketEvents = (io) => {
 
       console.log("User disconnected", socket.id);
     });
+    socket.on("upload_image", async (imageData) => {
+      //..other code..
+      // const imageBuffer = Buffer.from(base64, "base64");
+      // const fileSizeInBytes = imageBuffer.length; // or get from imageData if client sends it
+      // const params = {
+      //   /*...*/
+      // };
+      // s3.upload(params, (err, data) => {
+      //   //... error handling ...
+      // }).on("httpUploadProgress", (progress) => {
+      //   const progressPercentage = Math.round(
+      //     (progress.loaded / fileSizeInBytes) * 100
+      //   );
+      //   socket.emit("upload_progress", progressPercentage);
+      // });
+      //..other code..
+    });
   });
 };
 module.exports = socketEvents;
@@ -371,11 +397,7 @@ function buildMessage({
     message,
     type,
     attachments,
-    // createdAt: new Intl.DateTimeFormat("default", {
-    //   hour: "numeric",
-    //   minute: "numeric",
-    //   second: "numeric",
-    // }).format(new Date()),
+    createdAt: new Date(),
     // date: new Date().toISOString().split("T")[0],
     // time: new Date().toLocaleTimeString("en-US", {
     //   hour: "2-digit",
