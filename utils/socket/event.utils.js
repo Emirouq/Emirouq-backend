@@ -156,6 +156,7 @@ const socketEvents = (io) => {
         type,
         post,
         attachments,
+        uuid,
       } = data;
       const lastMessageTime = dayjs().unix();
 
@@ -286,6 +287,7 @@ const socketEvents = (io) => {
 
       // // add the message to the conversation on receiver side
       const messageData = buildMessage({
+        uuid,
         conversationId,
         user: senderId,
         message,
@@ -384,6 +386,7 @@ const socketEvents = (io) => {
 module.exports = socketEvents;
 
 function buildMessage({
+  uuid,
   conversationId,
   user,
   message,
@@ -391,7 +394,7 @@ function buildMessage({
   attachments = [],
 }) {
   return {
-    uuid: uuid(),
+    uuid,
     conversationId,
     user,
     message,
