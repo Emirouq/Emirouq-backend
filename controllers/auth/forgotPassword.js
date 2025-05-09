@@ -3,7 +3,7 @@ const ResetPasswordModal = require("../../models/ResetPassword.model");
 const { sendEmail } = require("../../services/util/sendEmail");
 const crypto = require("crypto");
 const createError = require("http-errors");
-const sendOTP = require("../../utils/templates/send-otp");
+const sendOTP = require("../../services/templates/sendOTP");
 
 const forgotPassword = async (req, res, next) => {
   try {
@@ -39,13 +39,13 @@ const forgotPassword = async (req, res, next) => {
     });
     await resetOtp.save();
 
-    // if (email) {
-    //   await sendEmail(
-    //     [email],
-    //     `ONE TIME PASSWORD (OTP) - CONFIRMATION`,
-    //     sendOTP({ otp, token })
-    //   );
-    // }
+    if (email) {
+      await sendEmail(
+        [email],
+        `ONE TIME PASSWORD (OTP)`,
+        sendOTP({ name: user?.firstName, otp })
+      );
+    }
 
     if (phoneNumber) {
       console.log(`Send OTP ${otp} to phone ${phoneNumber}`);

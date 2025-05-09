@@ -41,8 +41,12 @@ const PostSchema = new Schema(
       default: "pending",
     },
     location: {
-      type: String,
-      // required: true,
+      placeId: {
+        type: String,
+      },
+      name: {
+        type: String,
+      },
     },
     timePeriod: {
       type: String,

@@ -17,23 +17,23 @@ const resetPassword = async (req, res, next) => {
     if (password !== confirmPassword) {
       throw createError.BadRequest("Passwords do not match");
     }
-
+    console.log("password", password, confirmPassword);
     // Decode Base64 token
     let buff = Buffer.from(token, "base64");
     let text = buff.toString("ascii");
 
     const [identifier, otp] = text.split(":"); // Supports both email and phoneNumber
 
-    // Find verified OTP entry
-    const otpCheck = await ResetPasswordModal.findOne({
-      $or: [{ email: identifier }, { phoneNumber: identifier }],
-      otp,
-      isVerified: true,
-    });
+    // // Find verified OTP entry
+    // const otpCheck = await ResetPasswordModal.findOne({
+    //   $or: [{ email: identifier }, { phoneNumber: identifier }],
+    //   otp,
+    //   isVerified: true,
+    // });
 
-    if (!otpCheck) {
-      throw createError.BadRequest("OTP is invalid or expired!");
-    }
+    // if (!otpCheck) {
+    //   throw createError.BadRequest("OTP is invalid or expired!");
+    // }
 
     // Find user based on identifier
     const user = await UserModal.findOne({

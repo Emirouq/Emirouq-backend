@@ -45,8 +45,10 @@ const addPost = async (req, res, next) => {
       isDraft,
       category,
       subCategory,
+      locationName,
+      locationPlaceId,
     } = fields;
-
+    console.log("fields", fields);
     const { uuid: userId } = req.user;
 
     const draftMode = isDraft?.[0];
@@ -94,7 +96,6 @@ const addPost = async (req, res, next) => {
         : [files.file];
       uploadedFiles = await uploadFilesToAws(receivedFiles, "posts");
     }
-
     const newPost = new Post({
       uuid: uuid(),
       status: !!draftMode === true ? "draft" : "pending",
@@ -106,7 +107,12 @@ const addPost = async (req, res, next) => {
       category: category?.[0] || null,
       ...(parsedProperties.length > 0 && { properties: parsedProperties }),
       ...(timePeriod && { timePeriod: timePeriod[0] }),
-      ...(location && { location: location[0] }),
+      ...(location && {
+        location: {
+          name: locationName?.[0],
+          placeId: locationPlaceId[0],
+        },
+      }),
       ...(condition && { condition: condition[0] }),
       file: uploadedFiles,
       expirationDate: !draftMode ? endDate : null,
