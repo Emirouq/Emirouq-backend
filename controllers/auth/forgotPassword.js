@@ -12,11 +12,17 @@ const forgotPassword = async (req, res, next) => {
     if (!email && !phoneNumber) {
       throw createError.BadRequest("Email or phone number is required");
     }
-
-    const user = await UserModal.findOne({
-      $or: [{ email }, { phoneNumber }],
-    });
-
+    let user;
+    if (email) {
+      user = await UserModal.findOne({
+        email: email?.toLowerCase(),
+      });
+    } else if (phoneNumber) {
+      user = await UserModal.findOne({
+        phoneNumber,
+      });
+    }
+    console.log("user", user);
     if (!user) {
       throw createError.BadRequest("User not found");
     }
@@ -33,7 +39,7 @@ const forgotPassword = async (req, res, next) => {
 
     const resetOtp = new ResetPasswordModal({
       otp,
-      email,
+      email: email?.toLowerCase(),
       phoneNumber,
       isVerified: false,
     });
@@ -47,9 +53,7 @@ const forgotPassword = async (req, res, next) => {
       );
     }
 
-    if (phoneNumber) {
-      console.log(`Send OTP ${otp} to phone ${phoneNumber}`);
-    }
+    console.log(`Send OTP ${otp} to phone ${phoneNumber}`);
 
     return res.status(200).send({
       message: "OTP sent successfully",

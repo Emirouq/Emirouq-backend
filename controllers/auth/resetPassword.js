@@ -36,9 +36,16 @@ const resetPassword = async (req, res, next) => {
     // }
 
     // Find user based on identifier
-    const user = await UserModal.findOne({
-      $or: [{ email: identifier }, { phoneNumber: identifier }],
-    });
+    let user;
+    if (identifier?.includes("@")) {
+      user = await UserModal.findOne({
+        email: identifier?.toLowerCase(),
+      });
+    } else if (identifier) {
+      user = await UserModal.findOne({
+        phoneNumber: identifier,
+      });
+    }
 
     if (!user) {
       throw createError.BadRequest("User not found");
@@ -56,9 +63,16 @@ const resetPassword = async (req, res, next) => {
     );
     console.log("aa", aa);
     // Delete OTP entry after successful password reset
-    await ResetPasswordModal.findOneAndDelete({
-      $or: [{ email: identifier }, { phoneNumber: identifier }],
-    });
+
+    if (identifier?.includes("@")) {
+      await ResetPasswordModal.findOneAndDelete({
+        email: identifier?.toLowerCase(),
+      });
+    } else if (identifier) {
+      user = await ResetPasswordModal.findOneAndDelete({
+        phoneNumber: identifier,
+      });
+    }
 
     res.status(200).send({ message: "Password reset successfully" });
   } catch (err) {
