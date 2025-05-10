@@ -15,7 +15,7 @@ router.get("/", getPosts);
 router.get("/list", getAdsPost);
 router.get("/:id", getSinglePost);
 router.put("/updateStatus/:id", jwtValidation, updatePostStatus);
-router.put("/updatePost/:id", jwtValidation, updatePost);
+router.put("/:id", jwtValidation, updatePost);
 router.get("/favourite/get", jwtValidation, getFavouritePosts);
 router.put("/favourite/:id", jwtValidation, addToFavourite);
 module.exports = router;
