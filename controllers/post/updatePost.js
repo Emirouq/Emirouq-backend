@@ -100,6 +100,7 @@ const updatePost = async (req, res, next) => {
           : existingPost.properties;
       // existingPost.file = uploadedFiles;
       existingPost.isDraft = draftMode;
+      existingPost.status = "pending";
 
       await existingPost.save();
 
