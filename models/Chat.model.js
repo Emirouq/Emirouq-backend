@@ -12,10 +12,16 @@ const chatSchema = new Schema(
       type: String,
       required: true,
     },
-
     user: {
       type: String,
     },
+    // users's uuid,who has seen the message
+    seenBy: [
+      {
+        type: String,
+      },
+    ],
+
     message: {
       type: String,
     },

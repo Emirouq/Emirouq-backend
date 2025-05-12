@@ -93,6 +93,8 @@ const socketEvents = (io) => {
 
     //upon connection- only to user
     socket.on("onlineUserList", async (cb) => {
+      // conversation of userId
+      // fetch pair of userId which are in the conversation
       const onlineUsers = await getAllOnlineUsers();
       if (!!onlineUsers?.length) {
         cb && cb(onlineUsers);

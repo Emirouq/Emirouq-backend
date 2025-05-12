@@ -7,18 +7,11 @@ const { accessChecker } = require("../../middlewares/access_checker");
 const UserSubscription = require("../../models/UserSubscription.model");
 
 const uploadFilesToAws = async (files, folderName) => {
-  const uploadedFiles = [];
-
-  for (const file of files) {
-    const location = file.path || file.filepath;
-    const originalFileName = file.name || file.originalFilename;
-    const fileType = file.type || file.mimetype;
-
-    const data = await upload(location, originalFileName, folderName, fileType);
-    uploadedFiles.push(data?.Location);
-  }
-
-  return uploadedFiles;
+  const location = files?.path || files?.filepath;
+  const originalFileName = files?.name || files?.originalFilename;
+  const fileType = files?.type || files?.mimetype;
+  const data = await upload(location, originalFileName, folderName, fileType);
+  return data?.Location;
 };
 const parseForm = (req) =>
   new Promise((resolve, reject) => {
@@ -76,7 +69,8 @@ const addPost = async (req, res, next) => {
     let parsedProperties = [];
     if (fields.properties) {
       try {
-        parsedProperties = JSON.parse(fields.properties[0]).map((prop) => {
+        const parsed = JSON.parse(fields.properties[0]);
+        parsedProperties = parsed?.map((prop) => {
           if (!prop.name || !prop.value) {
             throw httpErrors.BadRequest(
               "Each property must have a name and value"
@@ -85,16 +79,23 @@ const addPost = async (req, res, next) => {
           return { name: prop.name, value: prop.value };
         });
       } catch (error) {
-        throw httpErrors.BadRequest("Invalid properties format");
+        throw httpErrors.BadRequest(
+          error?.message || "Invalid properties format"
+        );
       }
     }
 
     let uploadedFiles = [];
-    if (files?.file) {
-      const receivedFiles = Array.isArray(files.file)
-        ? files.file
-        : [files.file];
-      uploadedFiles = await uploadFilesToAws(receivedFiles, "posts");
+    // if (files?.file) {
+    //   const receivedFiles = Array.isArray(files.file)
+    //     ? files.file
+    //     : [files.file];
+    //   uploadedFiles = await uploadFilesToAws(receivedFiles, "posts");
+    // }
+    if (files?.image?.length) {
+      uploadedFiles = await Promise.all(
+        files?.image?.map((file) => uploadFilesToAws(file, `posts/${userId}`))
+      );
     }
     const newPost = new Post({
       uuid: uuid(),
@@ -120,6 +121,7 @@ const addPost = async (req, res, next) => {
     });
 
     await newPost.save();
+    console.log(newPost, "newPost");
 
     res.status(201).json({
       message: draftMode ? "Post saved as draft" : "Post added successfully",
