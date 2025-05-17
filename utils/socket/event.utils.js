@@ -287,6 +287,10 @@ const socketEvents = (io) => {
             }),
       });
 
+      let seenBy = [senderId];
+      if (userIsInConversation?.includes(receiverId)) {
+        seenBy = [senderId, receiverId];
+      }
       // // add the message to the conversation on receiver side
       const messageData = buildMessage({
         uuid,
@@ -295,13 +299,57 @@ const socketEvents = (io) => {
         message,
         type,
         attachments,
+        seenBy,
       });
       io.to(receiverId).emit("message", {
         message: messageData,
       });
+      // here we are updating the seenBy array of the chat
+      if (userIsInConversation?.includes(receiverId)) {
+        io.to(senderId).emit("seen_message", {
+          conversationId,
+          seenBy: [senderId, receiverId],
+        });
+      }
       //if message then create the chat
       // for attachments we have different service that saves the attachments in s3 and inserts the data in the db
       if (message) await ChatModel.create(messageData);
+    });
+
+    // seen message
+    socket.on("seen_message", async (payload) => {
+      const { conversationId, userId, receiverId } = payload;
+      if (!userId || !conversationId || !receiverId) {
+        console.log("no conversation id created");
+        return;
+      }
+      const isChatExists = await ChatModel.findOne({
+        conversationId,
+      });
+      // here we are checking if the chat exists or not
+      // if the chat does not exist then we are not updating the seenBy array
+      if (!isChatExists) {
+        console.log("no chat found");
+        return;
+      }
+      // here we are updating the seenBy array of the chat
+      await ChatModel.updateMany(
+        {
+          conversationId,
+          user: receiverId,
+        },
+        {
+          $addToSet: {
+            seenBy: [userId, receiverId],
+          },
+        }
+      );
+
+      // send the seen message to the receiver , that the message has been seen
+      io.to(receiverId).emit("seen_message", {
+        conversationId,
+        seenBy: [userId, receiverId],
+      });
     });
 
     socket.on("update_conversation_cache", async (payload) => {
@@ -394,6 +442,7 @@ function buildMessage({
   message,
   type = "text",
   attachments = [],
+  seenBy = [],
 }) {
   return {
     uuid,
@@ -403,11 +452,7 @@ function buildMessage({
     type,
     attachments,
     createdAt: new Date(),
-    // date: new Date().toISOString().split("T")[0],
-    // time: new Date().toLocaleTimeString("en-US", {
-    //   hour: "2-digit",
-    //   minute: "2-digit",
-    // }),
+    seenBy,
   };
 }
 
