@@ -33,7 +33,6 @@ const addPost = async (req, res, next) => {
       description,
       price,
       timePeriod,
-      location,
       condition,
       isDraft,
       category,
@@ -108,7 +107,7 @@ const addPost = async (req, res, next) => {
       category: category?.[0] || null,
       ...(parsedProperties.length > 0 && { properties: parsedProperties }),
       ...(timePeriod && { timePeriod: timePeriod[0] }),
-      ...(location && {
+      ...(locationName && {
         location: {
           name: locationName?.[0],
           placeId: locationPlaceId[0],

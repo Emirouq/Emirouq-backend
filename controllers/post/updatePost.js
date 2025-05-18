@@ -75,15 +75,36 @@ const updatePost = async (req, res, next) => {
         }
       }
 
-      // let uploadedFiles = existingPost.file || [];
-      // console.log("uploaded files", uploadedFiles);
-      // console.log("files", files);
-      // if (files?.file) {
-      //   const receivedFiles = Array.isArray(files.file)
-      //     ? files.file
-      //     : [files.file];
-      //   uploadedFiles = await uploadFilesToAws(receivedFiles, "posts");
-      // }
+      let uploadedFiles = [];
+      // Step 1: Get existing URLs from `fields.uploadedUrls`
+      if (fields?.uploadedUrls?.[0]) {
+        try {
+          const parsedUrls = JSON.parse(fields.uploadedUrls[0]);
+          if (Array.isArray(parsedUrls)) {
+            uploadedFiles.push(...parsedUrls);
+          }
+        } catch (err) {
+          throw httpErrors.BadRequest("Invalid uploadedUrls format");
+        }
+      }
+
+      // Step 2: Upload new images from `files.image`
+      if (files?.image) {
+        const imageFiles = Array.isArray(files.image)
+          ? files.image
+          : [files.image];
+        console.log("imageFiles", imageFiles);
+        const uploaded = await Promise.all(
+          imageFiles.map((file) =>
+            uploadFilesToAws([file], `posts/${userId}`).then((res) => res[0])
+          )
+        );
+
+        uploadedFiles.push(...uploaded);
+      }
+
+      // Save to DB
+      existingPost.file = uploadedFiles;
 
       existingPost.title = title?.[0] || existingPost.title;
       existingPost.description = description?.[0] || existingPost.description;
