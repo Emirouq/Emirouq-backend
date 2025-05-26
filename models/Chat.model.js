@@ -34,6 +34,17 @@ const chatSchema = new Schema(
         type: String,
       },
     ],
+    audio: {
+      uri: {
+        type: String,
+      },
+      duration: {
+        type: Number,
+      },
+      sound: {
+        type: Schema.Types.Mixed,
+      },
+    },
     attachments: [
       {
         uuid: {
