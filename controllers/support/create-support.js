@@ -7,6 +7,8 @@ const ticketCreatedTemplate = require("../../utils/templates/ticket");
 const AdminModel = require("../../models/Admin.model");
 const dayjs = require("dayjs");
 const SupportTicket = require("../../models/Support.model");
+const adminSupportTicket = require("../../services/templates/supportTicket");
+const createTicketNumber = require("../../services/createTicketNumber");
 
 const uploadFilesToAws = async (files, folderName) => {
   const location = files?.path || files?.filepath;
@@ -35,7 +37,7 @@ const parseForm = (req) =>
 const createSupport = async (req, res, next) => {
   try {
     const { fields, files } = await parseForm(req);
-    const { uuid: user } = req.user;
+    const { uuid: user, userName: firstName, email } = req.user;
 
     let { title, description } = fields;
     title = title?.[0];
@@ -51,8 +53,11 @@ const createSupport = async (req, res, next) => {
       );
     }
 
+    let ticketNumber = await createTicketNumber();
+
     const supportTicket = new SupportTicket({
       uuid: uuid(),
+      ticketNumber,
       user,
       title,
       description,
@@ -60,20 +65,21 @@ const createSupport = async (req, res, next) => {
     });
 
     await supportTicket.save();
-
-    //send email
-    // await sendEmail(
-    //   // ["support@tradelizer.com"],
-    //   `Support Ticket Created - Ticket Number: ${supportTicket.ticketNumber}`,
-    //   ticketCreatedTemplate({
-    //     userName: `${req.user.firstName} ${req.user.lastName}`,
-    //     userEmail: email,
-    //     ticketSubject: subject,
-    //     ticketType: type,
-    //     ticketDescription: description,
-    //   })
-    //   // "noreply@tradelizer.com"
-    // );
+    // send email
+    await sendEmail(
+      ["firebase-services@emirouq.ae"],
+      `Support Ticket Created - Ticket Number: ${supportTicket.ticketNumber}`,
+      adminSupportTicket({
+        ticketId: ticketNumber,
+        userName: firstName,
+        userEmail: email,
+        ticketTitle: title,
+        ticketDescription: description,
+        timestamp: supportTicket.createdAt,
+        supportDashboardLink: "support@emiroue.ae",
+      })
+      // "noreply@tradelizer.com"
+    );
     res.status(200).json({
       message: "Support ticket created successfully",
     });

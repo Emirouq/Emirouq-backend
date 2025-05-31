@@ -7,6 +7,10 @@ const supportTicketSchema = new Schema(
       required: true,
       unique: true,
     },
+    ticketNumber: {
+      type: String,
+      required: true,
+    },
     user: {
       type: String,
       ref: "user",
