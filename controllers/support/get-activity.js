@@ -1,4 +1,4 @@
-const SupportTicket = require("../../models/SupportTicket.model");
+const SupportTicket = require("../../models/Support.model");
 
 const getActivity = async (req, res, next) => {
   try {

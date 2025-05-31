@@ -1,5 +1,5 @@
 const SupportActivity = require("../../models/SupportActivity.model");
-const SupportTicket = require("../../models/SupportTicket.model");
+const SupportTicket = require("../../models/Support.model");
 const formidable = require("formidable");
 const { v4: uuid } = require("uuid");
 const { upload } = require("../../services/util/upload-files");

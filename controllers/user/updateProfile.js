@@ -107,7 +107,8 @@ const UserModel = require("../../models/User.model");
 const updateProfile = async (req, res, next) => {
   try {
     const {
-      fullName,
+      firstName,
+      lastName,
       email,
       phoneNumber,
       userHandle,
@@ -162,7 +163,8 @@ const updateProfile = async (req, res, next) => {
     const updatedUser = await UserModel.findOneAndUpdate(
       { uuid: userId },
       {
-        ...(fullName && { fullName }),
+        ...(firstName && { firstName }),
+        ...(lastName && { lastName }),
         ...(phoneNumber && { phoneNumber }),
         ...(sanitizedEmail && { email: sanitizedEmail }),
         ...(sanitizedUserHandle && { userHandle: sanitizedUserHandle }),

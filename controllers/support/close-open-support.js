@@ -1,4 +1,4 @@
-const SupportTicket = require("../../models/SupportTicket.model");
+const SupportTicket = require("../../models/Support.model");
 
 const closeOpenSupportTicket = async (req, res, next) => {
   try {

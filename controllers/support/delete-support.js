@@ -1,4 +1,4 @@
-const SupportTicket = require("../../models/SupportTicket.model");
+const SupportTicket = require("../../models/Support.model");
 const SupportActivity = require("../../models/SupportActivity.model");
 
 const deleteSupport = async (req, res, next) => {

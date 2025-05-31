@@ -1,5 +1,5 @@
 const dayjs = require("dayjs");
-const SupportTicket = require("../../models/SupportTicket.model");
+const SupportTicket = require("../../models/Support.model");
 
 const ReadTicket = async (req, res, next) => {
   try {
