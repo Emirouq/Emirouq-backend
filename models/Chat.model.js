@@ -39,10 +39,15 @@ const chatSchema = new Schema(
         type: String,
       },
       duration: {
-        type: Number,
+        type: String,
       },
-      sound: {
-        type: Schema.Types.Mixed,
+      type: {
+        type: String,
+        enum: ["audio", "voice"],
+        default: "audio",
+      },
+      mimeType: {
+        type: String,
       },
     },
     attachments: [

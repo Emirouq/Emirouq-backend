@@ -29,9 +29,11 @@ const parseForm = (req) =>
 const uploadFiles = async (req, res, next) => {
   try {
     const { fields, files } = await parseForm(req);
+
     const { conversationId } = req.params;
     const { uuid: user } = req.user;
     let attachments = [];
+    let audio = {};
     if (files?.image?.length) {
       attachments = await Promise.all(
         files?.image?.map((file) =>
@@ -39,14 +41,26 @@ const uploadFiles = async (req, res, next) => {
         )
       );
     }
-
-    // it will get all the admin uuids
-
+    if (files?.audio?.length) {
+      [audio] = await Promise.all(
+        files?.audio?.map((file) =>
+          uploadFilesToAws(file, `chat/${conversationId}`)
+        )
+      );
+    }
     const chat = new Chat({
       uuid: uuid(),
       conversationId,
       user,
       attachments,
+      ...(audio?.uri && {
+        audio: {
+          uri: audio?.uri || "",
+          duration: fields?.audioDuration?.[0] || 0,
+          mimeType: audio?.type || "",
+          type: fields?.audioType?.[0] || "audio",
+        },
+      }),
     });
 
     await chat.save();
@@ -54,6 +68,7 @@ const uploadFiles = async (req, res, next) => {
     res.status(200).json({
       message: "Support ticket created successfully",
       attachments: chat?.attachments,
+      audio: chat?.audio,
     });
   } catch (error) {
     next(error);

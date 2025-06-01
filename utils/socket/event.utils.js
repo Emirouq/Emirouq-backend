@@ -102,7 +102,7 @@ const socketEvents = (io) => {
     });
 
     socket.on("join_conversation", async (payload) => {
-      const { userId, conversationId } = payload;
+      const { userId, conversationId, sortConversation } = payload;
       if (!userId || !conversationId) {
         console.log("no conversation id created");
         return;
@@ -137,6 +137,8 @@ const socketEvents = (io) => {
       io.to(userId).emit("update_conversation_cache", {
         conversationId,
         firstConversation: false,
+        // for sort by last message time we need to update the conversation cache , this prop is used to update the conversation cache , if false then it will not update the conversation cache
+        sortConversation,
         chatDetails: {
           user: userId,
           count: 0,
@@ -159,8 +161,18 @@ const socketEvents = (io) => {
         post,
         attachments,
         uuid,
+        audio,
       } = data;
       const lastMessageTime = dayjs().unix();
+      const lastMessage = message
+        ? message
+        : attachments?.length
+        ? `${attachments.length} new attachment ${
+            attachments.length > 1 ? "s" : ""
+          }`
+        : audio?.uri
+        ? "New audio message"
+        : "";
 
       // check if the conversationId is valid
       if (!conversationId) {
@@ -191,7 +203,9 @@ const socketEvents = (io) => {
           conversationId,
           //this prop is passed to the client which signifies that this is the first time the user is joining the conversation
           firstConversation: true,
-          lastMessage: message,
+          // for sort by last message time we need to update the conversation cache , this prop is used to update the conversation cache , if false then it will not update the conversation cache
+          sortConversation: true,
+          lastMessage,
           lastMessageTime: lastMessageTime,
           post,
           ...conversation,
@@ -210,7 +224,7 @@ const socketEvents = (io) => {
         { uuid: conversationId },
         {
           $set: {
-            lastMessage: message,
+            lastMessage,
             lastMessageTime: lastMessageTime,
             "participants.$[elem].lastViewedTime": lastMessageTime,
             "participants.$[elem].count": 0,
@@ -234,7 +248,7 @@ const socketEvents = (io) => {
           { uuid: conversationId },
           {
             $set: {
-              lastMessage: message,
+              lastMessage,
               lastMessageTime: lastMessageTime,
             },
             $inc: {
@@ -255,8 +269,10 @@ const socketEvents = (io) => {
       }
       io.to(senderId).emit("update_conversation_cache", {
         conversationId,
-        lastMessage: message,
+        lastMessage,
         lastMessageTime: lastMessageTime,
+        // for sort by last message time we need to update the conversation cache , this prop is used to update the conversation cache , if false then it will not update the conversation cache
+        sortConversation: true,
         firstConversation: false,
         chatDetails: {
           user: senderId,
@@ -268,7 +284,9 @@ const socketEvents = (io) => {
       io.to(receiverId).emit("update_conversation_cache", {
         conversationId,
         firstConversation: false,
-        lastMessage: message,
+        // for sort by last message time we need to update the conversation cache , this prop is used to update the conversation cache , if false then it will not update the conversation cache
+        sortConversation: true,
+        lastMessage,
         lastMessageTime: lastMessageTime,
         // user is not in the conversation
         ...(receiverRes
@@ -299,6 +317,7 @@ const socketEvents = (io) => {
         message,
         type,
         attachments,
+        audio,
         seenBy,
       });
       io.to(receiverId).emit("message", {
@@ -349,25 +368,6 @@ const socketEvents = (io) => {
       io.to(receiverId).emit("seen_message", {
         conversationId,
         seenBy: [userId, receiverId],
-      });
-    });
-
-    socket.on("update_conversation_cache", async (payload) => {
-      const { conversationId, userId, post } = payload;
-      if (!conversationId || !userId) {
-        console.log("no conversation id created");
-        return;
-      }
-      const conversation = await getConversationDetails(conversationId, userId);
-      if (!conversation) {
-        console.log("no conversation found");
-        return;
-      }
-      socket.emit("update_conversation_cache", {
-        ...conversation,
-        ...post,
-        conversationId,
-        firstConversation: true,
       });
     });
 
@@ -442,6 +442,7 @@ function buildMessage({
   message,
   type = "text",
   attachments = [],
+  audio = {},
   seenBy = [],
 }) {
   return {
@@ -453,6 +454,7 @@ function buildMessage({
     attachments,
     createdAt: new Date(),
     seenBy,
+    audio,
   };
 }
 
