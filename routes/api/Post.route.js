@@ -21,7 +21,7 @@ router.put("/updateStatus/:id", jwtValidation, updatePostStatus);
 router.put("/:id", jwtValidation, updatePost);
 router.get("/favourite/get", jwtValidation, getFavouritePosts);
 router.put("/favourite/:id", jwtValidation, addToFavourite);
-router.delete("/:id", jwtValidation, deletePost);
+// router.delete("/:id", jwtValidation, deletePost);
 router.post("/like/:postId", jwtValidation, likePost);
 router.post("/comment/:postId", jwtValidation, addComment);
 module.exports = router;
