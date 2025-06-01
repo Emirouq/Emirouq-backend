@@ -67,6 +67,59 @@ const getSinglePost = async (req, res, next) => {
           preserveNullAndEmptyArrays: true,
         },
       },
+      {
+        $unwind: {
+          path: "$comments",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "user",
+          localField: "comments.userId",
+          foreignField: "uuid",
+          as: "comments.user",
+        },
+      },
+      {
+        $unwind: {
+          path: "$comments.user",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          doc: { $first: "$$ROOT" },
+          comments: {
+            $push: {
+              uuid: "$comments.uuid",
+              userId: "$comments.userId",
+              content: "$comments.content",
+              createdAt: "$comments.createdAt",
+              user: {
+                firstName: "$comments.user.firstName",
+                lastName: "$comments.user.lastName",
+                profileImage: "$comments.user.profileImage",
+              },
+            },
+          },
+        },
+      },
+      {
+        $set: {
+          comments: {
+            $reverseArray: "$comments",
+          },
+        },
+      },
+      {
+        $replaceRoot: {
+          newRoot: {
+            $mergeObjects: ["$doc", { comments: "$comments" }],
+          },
+        },
+      },
     ]);
 
     res.json({

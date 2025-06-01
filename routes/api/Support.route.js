@@ -9,12 +9,13 @@ const getActivity = require("../../controllers/support/get-activity");
 const readSupportTicket = require("../../controllers/support/read-ticker");
 const deleteSupport = require("../../controllers/support/delete-support");
 const closeSupportTicket = require("../../controllers/support/close-open-support");
-const validateAdmin = require("../../middlewares/validateAdmin");
+const respondToTicket = require("../../controllers/support/respondToTicket");
 
 // get user details
 router.post("/", createSupport);
-router.get("/admin", validateAdmin, getAllSupportForAdmin);
+router.get("/admin", getAllSupportForAdmin);
 router.get("/", getSupport);
+router.put("/:id", respondToTicket);
 router.post("/activity/:supportId", createActivity);
 router.get("/activity/:supportId", getActivity);
 router.put("/read/:supportId", readSupportTicket);

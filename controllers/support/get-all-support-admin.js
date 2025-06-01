@@ -4,7 +4,6 @@ const getAllSupportForAdmin = async (req, res, next) => {
   try {
     let searchCriteria = {};
     const { start, limit, keyword, status, type } = req.query;
-    const { uuid: userId } = req.user;
     if (keyword) {
       searchCriteria = {
         $or: [
@@ -51,59 +50,6 @@ const getAllSupportForAdmin = async (req, res, next) => {
         },
       },
       {
-        $project: {
-          "customer.snapTrade": 0,
-          "customer.stripe": 0,
-          "customer.limits": 0,
-        },
-      },
-      {
-        $set: {
-          isSeen: {
-            $cond: {
-              if: {
-                $gt: [
-                  "$lastMessageTime",
-                  {
-                    $ifNull: [
-                      {
-                        $arrayElemAt: [
-                          "$participants.lastViewedTime",
-                          {
-                            $indexOfArray: ["$participants.user", userId],
-                          },
-                        ],
-                      },
-                      0,
-                    ],
-                  },
-                ],
-              },
-              then: false,
-              else: true,
-            },
-          },
-        },
-      },
-      {
-        $set: {
-          unSeenRecord: {
-            $arrayElemAt: [
-              {
-                $filter: {
-                  input: "$participants",
-                  as: "participant",
-                  cond: {
-                    $eq: ["$$participant.user", userId],
-                  },
-                },
-              },
-              0,
-            ],
-          },
-        },
-      },
-      {
         $match: searchCriteria,
       },
       {
@@ -111,7 +57,7 @@ const getAllSupportForAdmin = async (req, res, next) => {
           data: [
             {
               $sort: {
-                lastMessageTime: -1,
+                createdAt: -1,
               },
             },
             {

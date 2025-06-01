@@ -1,5 +1,15 @@
 const { Schema, model } = require("mongoose");
 
+const CommentSchema = new Schema(
+  {
+    uuid: { type: String, required: true },
+    userId: { type: String, required: true },
+    content: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
 const PostSchema = new Schema(
   {
     uuid: {
@@ -111,6 +121,8 @@ const PostSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    likes: [{ type: String }], // Array of userIds who liked the post
+    comments: [CommentSchema],
   },
   { timestamps: true }
 );

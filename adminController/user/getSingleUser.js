@@ -5,8 +5,8 @@ const stripe = require("../../services/stripe/getStripe");
 /**
  * Login for existing users
  *
- * @author Areeb
- * @since 8 Jul 2023
+ * @author Gurpreet
+ * @since 1 June 2025
  */
 const getSingleUser = async (req, res, next) => {
   try {
