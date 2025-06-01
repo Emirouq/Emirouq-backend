@@ -9,7 +9,7 @@ const updatePostStatus = require("../../controllers/post/updatePostStatus");
 const jwtValidation = require("../../middlewares/jwt_validation");
 const addToFavourite = require("../../controllers/post/addToFavourite");
 const getFavouritePosts = require("../../controllers/post/getFavouritePosts");
-const deletePost = require("../../controllers/post/deletePost");
+// const deletePost = require("../../controllers/post/deletePost");
 const likePost = require("../../controllers/post/likePost");
 const addComment = require("../../controllers/post/addComment");
 
