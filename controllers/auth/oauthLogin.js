@@ -38,6 +38,7 @@ const oauthLogin = async (req, res, next) => {
         return res.status(201).json({
           accessToken,
           refreshToken,
+          newUser: false,
         });
       }
     }
@@ -80,6 +81,7 @@ const oauthLogin = async (req, res, next) => {
     res.status(201).json({
       accessToken,
       refreshToken,
+      newUser: true,
     });
   } catch (error) {
     next(error);

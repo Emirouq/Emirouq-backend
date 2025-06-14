@@ -123,6 +123,11 @@ const PostSchema = new Schema(
     },
     likes: [{ type: String }], // Array of userIds who liked the post
     comments: [CommentSchema],
+    // its related to subscription, when subscription is cancelled, then we will set the post expired as true
+    subscriptionId: {
+      type: String,
+      required: false, // Optional, can be set if the post is linked to a subscription
+    },
   },
   { timestamps: true }
 );
