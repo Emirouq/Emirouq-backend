@@ -21,6 +21,10 @@ const subscriptionPlanSchema = Schema({
     type: String,
     required: true,
   },
+  categoryId: {
+    type: String,
+    required: true,
+  },
   amount: {
     type: Number,
     required: true,

@@ -1,15 +1,34 @@
 const SubscriptionPlan = require("../../models/SubscriptionPlan.model");
 
-const getSubscriptionPlanList = async (req, res, next) => {
+const getSubscriptionPlans = async (req, res, next) => {
   try {
-    const subscriptionPlans = await SubscriptionPlan.find({});
-    res.json({
+    const { categoryId } = req.query;
+
+    let responseData;
+
+    if (categoryId) {
+      const plans = await SubscriptionPlan.find({ categoryId });
+
+      if (!plans || plans.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: "No subscription plans found for the given category",
+        });
+      }
+
+      responseData = plans;
+    } else {
+      responseData = await SubscriptionPlan.find({});
+    }
+
+    return res.status(200).json({
       success: true,
-      data: subscriptionPlans,
+      message: "Subscription plans fetched successfully",
+      data: responseData,
     });
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = getSubscriptionPlanList;
+module.exports = getSubscriptionPlans;
