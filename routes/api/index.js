@@ -16,10 +16,10 @@ router.use(
 router.use("/support", jwtValidation, require("./Support.route"));
 router.use("/account", jwtValidation, require("./Account.route"));
 router.use("/user", jwtValidation, require("./User.route"));
-router.use("/category", jwtValidation, require("./Category.route"));
+router.use("/category", require("./Category.route"));
 router.use(
   "/category/subCategory",
-  jwtValidation,
+  
   require("./SubCategory.route")
 );
 router.use("/post", require("./Post.route"));
