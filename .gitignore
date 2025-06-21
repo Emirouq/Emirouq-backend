@@ -1,4 +1,3 @@
-.env
 node_modules/
 mongo-tradelizer
 updateUserDetails.js
@@ -26,3 +25,4 @@ first.json
 wealthsimple-api.js
 ws-trade.js
 read.js
+config.bat
