@@ -14,9 +14,9 @@ const createSubscription = async (req, res, next) => {
   }
   //check if the subscription plan with the given priceId and categoryId exists
   const plan = await SubscriptionPlan.findOne({ priceId, categoryId });
-  if (!plan) {
-    throw createHttpError(404, "Plan not found");
-  }
+  // if (!plan) {
+  //   throw createHttpError(404, "Plan not found");
+  // }
 
   try {
     // Create the subscription. Note we're expanding the Subscription's
@@ -31,7 +31,7 @@ const createSubscription = async (req, res, next) => {
       ],
       payment_behavior: "default_incomplete",
       payment_settings: { save_default_payment_method: "on_subscription" },
-      expand: ["latest_invoice.confirmation_secret"],
+      expand: ["latest_invoice.confirmation_secret", "pending_setup_intent"],
       metadata: {
         priceId,
         categoryId,
@@ -39,17 +39,18 @@ const createSubscription = async (req, res, next) => {
       cancel_at_period_end: true,
     });
 
-    if (!subscription.latest_invoice.confirmation_secret) {
-      throw createHttpError(
-        500,
-        "Confirmation secret not found in the subscription"
-      );
+    if (subscription.pending_setup_intent !== null) {
+      res.send({
+        subscriptionId: subscription.id,
+        clientSecret: subscription.pending_setup_intent.client_secret,
+      });
+    } else {
+      res.send({
+        subscriptionId: subscription.id,
+        clientSecret:
+          subscription.latest_invoice.confirmation_secret.client_secret,
+      });
     }
-    res.send({
-      subscriptionId: subscription.id,
-      clientSecret:
-        subscription.latest_invoice.confirmation_secret.client_secret,
-    });
   } catch (error) {
     next(error);
   }
