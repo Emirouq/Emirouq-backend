@@ -87,6 +87,10 @@ const userSubscriptionModelSchema = new Schema({
       type: Boolean,
       default: false,
     },
+    categoryId: {
+      type: String,
+      required: true,
+    },
   },
   startDate: {
     type: Number,

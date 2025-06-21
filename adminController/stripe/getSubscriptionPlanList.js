@@ -10,7 +10,7 @@ const getSubscriptionPlans = async (req, res, next) => {
       const plans = await SubscriptionPlan.find({ categoryId });
 
       if (!plans || plans.length === 0) {
-        return res.status(404).json({
+        return res.json({
           success: false,
           error: "No subscription plans found for the given category",
         });

@@ -11,26 +11,29 @@ const trialPeriodCheckout = require("../../controllers/stripe/trialPeriodCheckou
 const deletePaymentMethod = require("../../controllers/stripe/deletePaymentMethod");
 const changePaymentMethod = require("../../controllers/stripe/changePaymentMethod");
 const checkSubscription = require("../../controllers/stripe/checkSubscription");
+const checkSubscriptionForSpecificCategory = require("../../controllers/stripe/checkSubscriptionForSpecificCategory");
 const refundPayment = require("../../controllers/stripe/refundPayment");
 // const roleCheck = require("../../middlewares/roleCheck");
-const jwtValidation = require("../../middlewares/jwt_validation");
 const createSubscription = require("../../controllers/stripe/createSubscription");
+const listOfSubscriptionPlan = require("../../controllers/stripe/listOfSubscriptionPlan");
 
 // get user details
-router.post("/update/session", jwtValidation, changeSubscription);
-router.get("/payment-sheet/:planId", jwtValidation, paymentSheet);
-router.post("/subscription", jwtValidation, createSubscription);
-router.get("/check-subscription/:id", jwtValidation, checkSubscription);
-router.put("/cancel-next-billing", jwtValidation, cancelNextBilling);
+router.post("/update/session", changeSubscription);
+router.get("/payment-sheet/:planId", paymentSheet);
+router.post("/subscription", createSubscription);
+router.get("/check-subscription/:id", checkSubscription);
+router.put("/cancel-next-billing", cancelNextBilling);
 
-router.post("/subscription/trial", jwtValidation, trialPeriodCheckout);
+router.post("/subscription/trial", trialPeriodCheckout);
 
-router.get("/subscription/future-invoice", jwtValidation, getFutureInvoice);
-router.get("/payment-method", jwtValidation, getPaymentMethods);
-router.delete("/delete-payment-method/:id", jwtValidation, deletePaymentMethod);
-router.put("/change-payment-method/:id", jwtValidation, changePaymentMethod);
-router.post("/payment-method", jwtValidation, savePaymentMethod);
-router.post("/refund", jwtValidation, refundPayment);
+router.get("/subscription/future-invoice", getFutureInvoice);
+router.get("/payment-method", getPaymentMethods);
+router.delete("/delete-payment-method/:id", deletePaymentMethod);
+router.put("/change-payment-method/:id", changePaymentMethod);
+router.post("/payment-method", savePaymentMethod);
+router.post("/refund", refundPayment);
+router.get("/is_subscribed/:categoryId", checkSubscriptionForSpecificCategory);
+router.get("/list-of-subscription-plan/:categoryId", listOfSubscriptionPlan);
 
 // webhooks route
 

@@ -2,11 +2,10 @@ const router = require("express").Router();
 // APIS
 
 router.use("/auth", require("./Auth.route"));
-router.use("/stripe", require("./Stripe.route"));
 
 const jwtValidation = require("../../middlewares/jwt_validation");
-const { accessChecker } = require("../../middlewares/access_checker");
 
+router.use("/stripe", jwtValidation, require("./Stripe.route"));
 router.use("/me", jwtValidation, require("../../controllers/me/getMe"));
 router.use(
   "/auth/admin/me",
@@ -19,7 +18,7 @@ router.use("/user", jwtValidation, require("./User.route"));
 router.use("/category", require("./Category.route"));
 router.use(
   "/category/subCategory",
-  
+
   require("./SubCategory.route")
 );
 router.use("/post", require("./Post.route"));

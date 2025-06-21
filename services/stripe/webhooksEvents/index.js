@@ -13,7 +13,9 @@ const invoicePaid = async (data) => {
     return;
   }
   const priceId = data?.object?.parent?.subscription_details?.metadata?.priceId;
-  const plan = await SubscriptionPlan.findOne({ priceId });
+  const categoryId =
+    data?.object?.parent?.subscription_details?.metadata?.categoryId;
+  const plan = await SubscriptionPlan.findOne({ priceId, categoryId });
   if (!plan) {
     console.log("Plan not found");
     return;
@@ -65,6 +67,7 @@ const invoicePaid = async (data) => {
       isVerifiedBadge: plan?.isVerifiedBadge,
       prioritySupport: plan?.prioritySupport,
       premiumSupport: plan?.premiumSupport,
+      categoryId: plan?.categoryId,
     },
     startDate: subscription?.items?.data?.[0]?.current_period_start,
     endDate: subscription?.items?.data?.[0]?.current_period_end,

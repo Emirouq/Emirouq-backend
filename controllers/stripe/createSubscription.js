@@ -1,20 +1,19 @@
 const createHttpError = require("http-errors");
-const UserSubscription = require("../../models/UserSubscription.model");
 const SubscriptionPlan = require("../../models/SubscriptionPlan.model");
 const stripe = require("../../services/stripe/getStripe");
 const User = require("../../models/User.model");
-const { cancel } = require("agenda/dist/agenda/cancel");
 
 const createSubscription = async (req, res, next) => {
   const { uuid: user } = req.user;
-  const { priceId } = req.body;
+  const { priceId, categoryId } = req.body;
 
   // Check if the user is a customer
   const { customerId } = await User.findOne({ uuid: user }, { customerId: 1 });
   if (!customerId) {
     throw createHttpError(404, "Customer not found");
   }
-  const plan = await SubscriptionPlan.findOne({ priceId });
+  //check if the subscription plan with the given priceId and categoryId exists
+  const plan = await SubscriptionPlan.findOne({ priceId, categoryId });
   if (!plan) {
     throw createHttpError(404, "Plan not found");
   }
@@ -35,10 +34,17 @@ const createSubscription = async (req, res, next) => {
       expand: ["latest_invoice.confirmation_secret"],
       metadata: {
         priceId,
+        categoryId,
       },
       cancel_at_period_end: true,
     });
 
+    if (!subscription.latest_invoice.confirmation_secret) {
+      throw createHttpError(
+        500,
+        "Confirmation secret not found in the subscription"
+      );
+    }
     res.send({
       subscriptionId: subscription.id,
       clientSecret:
