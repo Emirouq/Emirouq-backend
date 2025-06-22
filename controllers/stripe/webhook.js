@@ -37,11 +37,13 @@ const webhook = async (req, res) => {
 
   switch (eventType) {
     case "customer.subscription.deleted":
+      subscriptionCancelled(data);
       break;
     case "subscription_schedule.canceled":
       subscriptionCancelled(data);
       break;
     case "subscription_schedule.aborted":
+      subscriptionCancelled(data);
       break;
     case "customer.subscription.created":
       break;
