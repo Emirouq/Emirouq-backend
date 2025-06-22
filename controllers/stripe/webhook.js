@@ -22,17 +22,17 @@ const webhook = async (req, res) => {
     eventType,
     " ***************"
   );
-  if (!data?.object?.parent?.subscription_details?.subscription) {
-    console.log("No subscription found in the event data");
-    return res.sendStatus(200);
-  }
-  const subscription = await stripe.subscriptions.retrieve(
-    data?.object?.parent?.subscription_details?.subscription
-  );
-  if (!subscription) {
-    console.log("No subscription found for the given ID");
-    return res.sendStatus(200);
-  }
+  // if (!data?.object?.parent?.subscription_details?.subscription) {
+  //   console.log("No subscription found in the event data");
+  //   return res.sendStatus(200);
+  // }
+  // const subscription = await stripe.subscriptions.retrieve(
+  //   data?.object?.parent?.subscription_details?.subscription
+  // );
+  // if (!subscription) {
+  //   console.log("No subscription found for the given ID");
+  //   return res.sendStatus(200);
+  // }
 
   switch (eventType) {
     case "customer.subscription.deleted":

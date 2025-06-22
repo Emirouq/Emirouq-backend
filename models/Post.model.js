@@ -63,7 +63,7 @@ const PostSchema = new Schema(
       default: "7 days",
       // required: true,
     },
-    subCategory: { type: String, ref: "SubCategory", required: true },
+    subCategory: { type: String, ref: "SubCategory", required: false },
     category: { type: String, ref: "Category", required: true },
     properties: [
       {

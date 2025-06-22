@@ -14,9 +14,9 @@ const createSubscription = async (req, res, next) => {
   }
   //check if the subscription plan with the given priceId and categoryId exists
   const plan = await SubscriptionPlan.findOne({ priceId, categoryId });
-  // if (!plan) {
-  //   throw createHttpError(404, "Plan not found");
-  // }
+  if (!plan) {
+    throw createHttpError(404, "Plan not found");
+  }
 
   try {
     // Create the subscription. Note we're expanding the Subscription's
@@ -31,7 +31,7 @@ const createSubscription = async (req, res, next) => {
       ],
       payment_behavior: "default_incomplete",
       payment_settings: { save_default_payment_method: "on_subscription" },
-      expand: ["latest_invoice.confirmation_secret", "pending_setup_intent"],
+      expand: ["latest_invoice", "pending_setup_intent"],
       metadata: {
         priceId,
         categoryId,

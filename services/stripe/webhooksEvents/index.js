@@ -49,7 +49,7 @@ const invoicePaid = async (data) => {
     charge: invoice?.charge?.id,
   };
 
-  const userSubscription = await UserSubscription.create({
+  await UserSubscription.create({
     uuid: uuid(),
     user: user.uuid,
     customerId: user?.customerId,
@@ -75,21 +75,6 @@ const invoicePaid = async (data) => {
     fingerPrint: invoiceObject?.fingerPrint,
     defaultPaymentMethod: subscription?.default_payment_method,
   });
-
-  await User.findOneAndUpdate(
-    { uuid: user.uuid },
-    {
-      $set: {
-        subscription: userSubscription.uuid,
-        subscriptionStatus: "active",
-        subscriptionPlan: {
-          planId: plan.uuid,
-          amount: plan?.amount,
-        },
-      },
-    },
-    { new: true }
-  );
 };
 const chargeSuccess = async (data) => {
   // const user = await User.findOne({ customerId: data?.object?.customer });
