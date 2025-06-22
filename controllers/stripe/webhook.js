@@ -7,6 +7,7 @@ const {
   invoicePaid,
   chargeSuccess,
   customerSubscriptionUpdated,
+  subscriptionCancelled,
 } = require("../../services/stripe/webhooksEvents");
 const webhook = async (req, res) => {
   let data;
@@ -38,6 +39,7 @@ const webhook = async (req, res) => {
     case "customer.subscription.deleted":
       break;
     case "subscription_schedule.canceled":
+      subscriptionCancelled(data);
       break;
     case "subscription_schedule.aborted":
       break;

@@ -49,6 +49,7 @@ const addPost = async (req, res, next) => {
     const subscription = await UserSubscription.findOne({
       user: userId,
       status: "active",
+      "subscriptionPlan.categoryId": category?.[0],
     });
     let endDate;
     if (!draftMode) {
@@ -96,6 +97,11 @@ const addPost = async (req, res, next) => {
         files?.image?.map((file) => uploadFilesToAws(file, `posts/${userId}`))
       );
     }
+    const categorySubscription = await UserSubscription.findOne({
+      user: userId,
+      status: "active",
+      "subscriptionPlan.categoryId": category?.[0],
+    });
     const newPost = new Post({
       uuid: uuid(),
       status: !!draftMode === true ? "draft" : "pending",
@@ -117,6 +123,9 @@ const addPost = async (req, res, next) => {
       file: uploadedFiles,
       expirationDate: !draftMode ? endDate : null,
       adType: subscription?.uuid ? "paid" : "free",
+      ...(categorySubscription && {
+        subscriptionId: categorySubscription?.subscriptionId,
+      }),
     });
 
     await newPost.save();

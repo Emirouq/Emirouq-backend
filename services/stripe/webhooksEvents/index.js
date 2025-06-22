@@ -4,6 +4,7 @@ const User = require("../../../models/User.model");
 const stripe = require("../getStripe");
 const { v4: uuid } = require("uuid");
 const dayjs = require("dayjs");
+const Post = require("../../../models/Post.model");
 const invoicePaid = async (data) => {
   console.log(data, "data");
 
@@ -76,6 +77,69 @@ const invoicePaid = async (data) => {
     defaultPaymentMethod: subscription?.default_payment_method,
   });
 };
+const subscriptionCancelled = async (data) => {
+  const user = await User.findOne({ customerId: data?.object?.customer });
+  if (!user) {
+    console.log("User not found");
+    return;
+  }
+
+  const subscription = await stripe.subscriptions.retrieve(
+    data?.object?.parent?.subscription_details?.subscription
+  );
+  if (!subscription) {
+    console.log("Subscription not found");
+    return;
+  }
+  await UserSubscription.findOneAndUpdate(
+    {
+      subscriptionId: subscription?.id,
+    },
+    {
+      $set: {
+        status: "cancelled",
+        endDate: subscription?.items?.data?.[0]?.current_period_end,
+      },
+    }
+  );
+
+  await Post.updateMany(
+    {
+      subscriptionId: subscription?.id,
+    },
+    {
+      $set: {
+        isExpired: true,
+      },
+    }
+  );
+  // await UserSubscription.create({
+  //   uuid: uuid(),
+  //   user: user.uuid,
+  //   customerId: user?.customerId,
+  //   subscriptionId: subscription?.id,
+  //   subscriptionPlan: {
+  //     planId: plan.uuid,
+  //     name: plan?.name,
+  //     amount: plan?.amount,
+  //     currency: plan?.currency,
+  //     interval: plan?.interval,
+  //     interval_count: plan?.interval_count,
+  //     duration: plan?.duration,
+  //     numberOfAds: plan?.numberOfAds,
+  //     featuredAdBoosts: plan?.featuredAdBoosts,
+  //     isVerifiedBadge: plan?.isVerifiedBadge,
+  //     prioritySupport: plan?.prioritySupport,
+  //     premiumSupport: plan?.premiumSupport,
+  //     categoryId: plan?.categoryId,
+  //   },
+  //   startDate: subscription?.items?.data?.[0]?.current_period_start,
+  //   endDate: subscription?.items?.data?.[0]?.current_period_end,
+  //   status: "active",
+  //   fingerPrint: invoiceObject?.fingerPrint,
+  //   defaultPaymentMethod: subscription?.default_payment_method,
+  // });
+};
 const chargeSuccess = async (data) => {
   // const user = await User.findOne({ customerId: data?.object?.customer });
   // if (!user) {
@@ -126,4 +190,5 @@ module.exports = {
   couponUpdated,
   couponDeleted,
   chargeSuccess,
+  subscriptionCancelled,
 };

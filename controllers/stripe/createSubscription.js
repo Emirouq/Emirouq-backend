@@ -31,7 +31,7 @@ const createSubscription = async (req, res, next) => {
       ],
       payment_behavior: "default_incomplete",
       payment_settings: { save_default_payment_method: "on_subscription" },
-      expand: ["latest_invoice", "pending_setup_intent"],
+      expand: ["latest_invoice.confirmation_secret", "pending_setup_intent"],
       metadata: {
         priceId,
         categoryId,

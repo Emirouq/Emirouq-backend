@@ -46,12 +46,13 @@ const accessChecker = async (userId, subscription) => {
     const postsByUser = await Post.find({
       userId,
       status: { $in: ["pending", "active"] },
-      isExpired: false,
       createdAt: {
         $gte: startDate,
         $lte: dayjs().toDate(),
       },
       adType: adType,
+      isExpired: false,
+      subscriptionId: subscription?.subscriptionId,
     }).sort({
       createdAt: -1,
     });
