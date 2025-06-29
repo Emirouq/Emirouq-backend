@@ -7,9 +7,9 @@ const getFeaturedAds = async (req, res, next) => {
       {
         $match: {
           "featuredAd.isFeatured": true,
-          status: "active",
-          isExpired: false,
-          subscriptionId: { $exists: true, $ne: null },
+          // status: "active",
+          // isExpired: false,
+          // subscriptionId: { $exists: true, $ne: null },
         },
       },
       {
