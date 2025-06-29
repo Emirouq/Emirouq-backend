@@ -11,16 +11,16 @@ const bodyParser = require("body-parser");
 const routes = require("./routes");
 require("./utils/Redis.util");
 // const { setIo } = require("./utils/socket/io.utils");
-// const io = require("socket.io")(http, {
-//   cors: {
-//     origin: "*",
-//   },
-// });
-// app.use((req, res, next) => {
-//   setIo(io);
-//   req.io = io;
-//   next();
-// });
+const io = require("socket.io")(http, {
+  cors: {
+    origin: "*",
+  },
+});
+app.use((req, res, next) => {
+  setIo(io);
+  req.io = io;
+  next();
+});
 
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(
