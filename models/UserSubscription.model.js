@@ -133,6 +133,10 @@ const userSubscriptionModelSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  featuredAdBoostsUsed: {
+    type: Number,
+    default: 0, // Number of "Featured Ad Boosts" used
+  },
 });
 
 userSubscriptionModelSchema.index({ user: 1 });

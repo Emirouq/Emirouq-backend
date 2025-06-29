@@ -8,6 +8,7 @@ const {
   chargeSuccess,
   customerSubscriptionUpdated,
   subscriptionCancelled,
+  paymentIntent,
 } = require("../../services/stripe/webhooksEvents");
 const webhook = async (req, res) => {
   let data;
@@ -57,6 +58,9 @@ const webhook = async (req, res) => {
       break;
     case "invoice.paid":
       invoicePaid(data);
+      break;
+    case "payment_intent.succeeded":
+      paymentIntent(data);
       break;
     case "invoice.payment_failed":
       break;

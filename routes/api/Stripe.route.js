@@ -19,7 +19,7 @@ const listOfSubscriptionPlan = require("../../controllers/stripe/listOfSubscript
 
 // get user details
 router.post("/update/session", changeSubscription);
-router.get("/payment-sheet/:planId", paymentSheet);
+router.post("/payment-sheet/:planId", paymentSheet);
 router.post("/subscription", createSubscription);
 router.get("/check-subscription/:id", checkSubscription);
 router.put("/cancel-next-billing", cancelNextBilling);

@@ -8,6 +8,7 @@ const paymentSheet = async (req, res, next) => {
   try {
     const { uuid: user } = req.user;
     const { planId } = req.params;
+    const { amount, metadata } = req.body;
 
     // Check if the user is a customer
     const { customerId } = await User.findOne(
@@ -22,13 +23,15 @@ const paymentSheet = async (req, res, next) => {
       throw createHttpError(404, "Plan not found");
     }
 
+    // if amount is coming from the request body, use that, otherwise use the plan amount
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: plan?.amount * 100,
-      currency: "aed",
+      amount: amount ? (amount * 100)?.toFixed(0) : plan?.amount * 100,
+      currency: "usd",
       customer: customerId,
       automatic_payment_methods: {
         enabled: true,
       },
+      metadata,
     });
 
     res.json({

@@ -120,6 +120,31 @@ const getSinglePost = async (req, res, next) => {
           },
         },
       },
+      {
+        $lookup: {
+          from: "userSubscriptions",
+          localField: "subscriptionId",
+          foreignField: "subscriptionId",
+          as: "postSubscription",
+        },
+      },
+      {
+        $unwind: {
+          path: "$postSubscription",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      //we have to check is the feature add booost in plan is used all or not
+      {
+        $set: {
+          isFeaturedAdBoostUsed: {
+            $gte: [
+              "$postSubscription.featuredAdBoostsUsed",
+              "$postSubscription.subscriptionPlan.featuredAdBoosts",
+            ],
+          },
+        },
+      },
     ]);
 
     res.json({

@@ -5,6 +5,7 @@ const stripe = require("../getStripe");
 const { v4: uuid } = require("uuid");
 const dayjs = require("dayjs");
 const Post = require("../../../models/Post.model");
+const { getUtcUnixTimestamp } = require("../../util/dayjsHelperFunctions");
 const invoicePaid = async (data) => {
   console.log(data, "data");
 
@@ -77,6 +78,52 @@ const invoicePaid = async (data) => {
     defaultPaymentMethod: subscription?.default_payment_method,
   });
 };
+
+const paymentIntent = async (data) => {
+  console.log(data, "data");
+
+  const user = await User.findOne({ customerId: data?.object?.customer });
+  if (!user) {
+    console.log("User not found");
+    return;
+  }
+  const paymentIntent = await stripe.paymentIntents.retrieve(data?.object?.id);
+  console.log(paymentIntent, "paymentIntent");
+
+  const post = await Post.findOne({
+    uuid: data?.object?.metadata?.postId,
+  });
+  if (!post) {
+    console.log("Post not found");
+    return;
+  }
+
+  await Post.findOneAndUpdate(
+    {
+      uuid: post.uuid,
+    },
+    {
+      $set: {
+        "featuredAd.isFeatured":
+          data?.object?.metadata?.isFeaturedAd === "true",
+        "featuredAd.price": paymentIntent?.amount / 100,
+        "featuredAd.createdAt": getUtcUnixTimestamp(),
+      },
+    }
+  );
+
+  // also update the subscription plan used for featured ad boosts and increment the count , how many times the user has used the featured ad boosts
+  await UserSubscription.findOneAndUpdate(
+    {
+      subscriptionId: post?.subscriptionId,
+    },
+    {
+      $inc: {
+        featuredAdBoostsUsed: 1,
+      },
+    }
+  );
+};
 const subscriptionCancelled = async (data) => {
   const user = await User.findOne({ customerId: data?.object?.customer });
   if (!user) {
@@ -110,6 +157,11 @@ const subscriptionCancelled = async (data) => {
     {
       $set: {
         isExpired: true,
+        "featuredAd.isFeatured": false,
+        expirationDate: subscription?.items?.data?.[0]?.current_period_end,
+      },
+      $unset: {
+        subscriptionId: "",
       },
     }
   );
@@ -191,4 +243,5 @@ module.exports = {
   couponDeleted,
   chargeSuccess,
   subscriptionCancelled,
+  paymentIntent,
 };

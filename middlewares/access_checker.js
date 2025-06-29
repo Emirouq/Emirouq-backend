@@ -9,7 +9,7 @@ const accessChecker = async (userId, subscription) => {
     let planName = "free";
     let numberOfAdsAllowed = 1;
     let isFreePlan = true; // track if the user is on the free plan
-    let endDate = dayjs().add(15, "days").toDate();
+    let endDate = dayjs().add(15, "days").valueOf() / 1000;
     let adType = "free"; // default ad type
 
     //if the user has a subscription plan, get the details and update the variables.

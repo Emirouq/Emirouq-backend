@@ -198,6 +198,32 @@ function parseDate(dateString) {
   }
   return new Date(year, monthIndex, 1); // Using 1st day of the month
 }
+function getUtcUnixTimestamp(dateInput) {
+  let dayjsObjectInUtc;
+
+  if (dateInput !== undefined && dateInput !== null && dateInput !== "") {
+    // Attempt to parse the provided dateInput and treat it as UTC or convert to UTC
+    // dayjs.utc(dateInput) tries to parse the input as if it were UTC.
+    // If the input has timezone information (e.g., "2023-10-27T12:00:00+02:00"),
+    // dayjs.utc() will convert it to the equivalent UTC time.
+    // If the input is a simple string like "2023-10-27", dayjs.utc() assumes it's midnight UTC on that day.
+    const parsedDate = dayjs.utc(dateInput);
+
+    if (parsedDate.isValid()) {
+      dayjsObjectInUtc = parsedDate;
+    } else {
+      console.warn(
+        `Invalid dateInput provided: "${dateInput}". Using current UTC time instead.`
+      );
+      dayjsObjectInUtc = dayjs.utc(); // Fallback to current time in UTC
+    }
+  } else {
+    // No dateInput provided, use the current time in UTC
+    dayjsObjectInUtc = dayjs.utc();
+  }
+
+  return dayjsObjectInUtc.unix(); // Get Unix timestamp (seconds)
+}
 module.exports = {
   utcTimeToDate,
   utcDate,
@@ -209,4 +235,5 @@ module.exports = {
   dateToFormattedString,
   zerodhaParseOptionSymbol,
   parseOptionSymbol,
+  getUtcUnixTimestamp,
 };
