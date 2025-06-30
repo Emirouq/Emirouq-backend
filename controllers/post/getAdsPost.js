@@ -10,20 +10,20 @@ const getAdsPost = async (req, res, next) => {
       userId,
     });
     const data = await Post.aggregate([
-      // {
-      //   $match: {
-      //     ...searchCriteria,
-      //     // $or: [
-      //     //   {
-      //     //     isExpired: false,
-      //     //   },
-      //     //   //for free users
-      //     //   {
-      //     //     expirationDate: { $gt: Date.now() },
-      //     //   },
-      //     // ],
-      //   },
-      // },
+      {
+        $match: {
+          ...searchCriteria,
+          // $or: [
+          //   {
+          //     isExpired: false,
+          //   },
+          //   //for free users
+          //   {
+          //     expirationDate: { $gt: Date.now() },
+          //   },
+          // ],
+        },
+      },
       {
         $lookup: {
           from: "categories",
