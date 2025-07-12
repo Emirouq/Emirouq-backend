@@ -20,6 +20,7 @@ router.get("/featured-ads", getFeaturedAds);
 router.get("/list", getAdsPost);
 router.get("/:id", getSinglePost);
 const jwtValidation = require("../../middlewares/jwt_validation");
+const deletePost = require("../../controllers/post/deletePost");
 router.get("/:categoryId/similar", getPostsByCategory);
 
 router.post("/", jwtValidation, addPost);
@@ -30,6 +31,7 @@ router.put("/favourite/:id", jwtValidation, addToFavourite);
 // router.delete("/:id", jwtValidation, deletePost);
 router.post("/like/:postId", jwtValidation, likePost);
 router.post("/comment/:postId", jwtValidation, addComment);
+router.delete("/:id", jwtValidation, deletePost);
 router.post(
   "/createSubscriptionForFeatureAd/:postId",
   jwtValidation,
