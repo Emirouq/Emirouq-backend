@@ -13,12 +13,14 @@ const getFavouritePosts = require("../../controllers/post/getFavouritePosts");
 const likePost = require("../../controllers/post/likePost");
 const addComment = require("../../controllers/post/addComment");
 const createSubscriptionForFeatureAd = require("../../controllers/post/createSubscriptionForFeatureAd");
+const getPostsByCategory = require("../../controllers/post/getPostsByCategory");
 
 router.get("/", getPosts);
 router.get("/featured-ads", getFeaturedAds);
 router.get("/list", getAdsPost);
 router.get("/:id", getSinglePost);
 const jwtValidation = require("../../middlewares/jwt_validation");
+router.get("/:categoryId/similar", getPostsByCategory);
 
 router.post("/", jwtValidation, addPost);
 router.put("/updateStatus/:id", jwtValidation, updatePostStatus);
