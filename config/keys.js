@@ -61,4 +61,7 @@ module.exports = {
         : process.env.STRIPE_SECRET_KEY,
   },
   zeptoSecret: process.env.ZEPTO_SECRET,
+  expoConfig: {
+    accessToken: process.env.EXPO_ACCESS_TOKEN,
+  },
 };

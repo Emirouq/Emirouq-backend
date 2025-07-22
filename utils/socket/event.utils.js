@@ -4,6 +4,8 @@ const Conversation = require("../../models/Conversation.model");
 const ChatModel = require("../../models/Chat.model");
 const redisClient = require("../Redis.util");
 const { v4: uuid } = require("uuid");
+const PushNotificationModel = require("../../models/PushNotification.model");
+const pushNotification = require("../pushNotification.utils");
 const UserState = {
   users: [],
   setUsers: function (newUsers) {
@@ -309,6 +311,10 @@ const socketEvents = (io) => {
       if (userIsInConversation?.includes(receiverId)) {
         seenBy = [senderId, receiverId];
       }
+
+      const receiverToken = await PushNotificationModel.findOne({
+        user: receiverId,
+      });
       // // add the message to the conversation on receiver side
       const messageData = buildMessage({
         uuid,
@@ -320,6 +326,15 @@ const socketEvents = (io) => {
         audio,
         seenBy,
       });
+      const payload = {
+        expoPushToken: receiverToken?.token,
+        message: {
+          title: `New message from ${conversation?.receiver?.firstName}`,
+          body: `${lastMessage}`,
+        },
+      };
+      await pushNotification(payload);
+
       io.to(receiverId).emit("message", {
         message: messageData,
       });

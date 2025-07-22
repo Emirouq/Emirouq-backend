@@ -4,12 +4,11 @@ const router = require("express").Router();
 const getAllUsers = require("../../controllers/user/getAllUsers");
 const updateProfile = require("../../controllers/user/updateProfile");
 const resetPassword = require("../../controllers/user/resetPassword");
+const saveNotificationToken = require("../../controllers/user/saveNotificationToken");
 
+router.put("/save-notification-token", saveNotificationToken);
 router.put("/updateProfile", updateProfile);
 router.put("/password/:token", resetPassword);
-
-const roleCheck = require("../../middlewares/roleCheck");
-
 router.get("/", getAllUsers);
 
 module.exports = router;
