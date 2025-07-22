@@ -1,14 +1,29 @@
 const Post = require("../../models/Post.model");
+const { SORT_MAP } = require("../../utils/numberUtils");
 const { searchBy } = require("../../utils/socket/searchBy");
+
 const getAdsPost = async (req, res, next) => {
   try {
-    const { start, limit, status, userId } = req.query;
+    const {
+      start,
+      limit,
+      status,
+      userId,
+      sortBy,
+      priceRange,
+      category,
+      keyword,
+    } = req.query;
     // const { uuid: userId } = req.user;
     // for search by status, result, tradeType, tags, keyword, startDate, endDate
     const searchCriteria = searchBy({
       status,
       userId,
+      priceRange,
+      category,
+      keyword,
     });
+    const sortOption = SORT_MAP[sortBy] || { createdAt: -1 }; // default to newest if sortBy is not provided
     const data = await Post.aggregate([
       {
         $match: {
@@ -39,9 +54,7 @@ const getAdsPost = async (req, res, next) => {
         },
       },
       {
-        $sort: {
-          createdAt: -1,
-        },
+        $sort: sortOption,
       },
       {
         $facet: {

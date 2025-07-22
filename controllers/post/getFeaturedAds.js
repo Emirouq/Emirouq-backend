@@ -1,12 +1,21 @@
 const Post = require("../../models/Post.model");
+const { FEATURED_AD_SORT_MAP } = require("../../utils/numberUtils");
+const { searchBy } = require("../../utils/socket/searchBy");
 const getFeaturedAds = async (req, res, next) => {
   try {
-    const { start, limit } = req.query;
+    const { keyword, start, limit, sortBy, priceRange, category } = req.query;
+    const sortOption = FEATURED_AD_SORT_MAP[sortBy] || { createdAt: -1 }; // default to newest if sortBy is not provided
 
+    const searchCriteria = searchBy({
+      priceRange,
+      category,
+      keyword,
+    });
     const data = await Post.aggregate([
       {
         $match: {
           "featuredAd.isFeatured": true,
+          ...searchCriteria,
           // status: "active",
           // isExpired: false,
           // subscriptionId: { $exists: true, $ne: null },
@@ -27,9 +36,7 @@ const getFeaturedAds = async (req, res, next) => {
         },
       },
       {
-        $sort: {
-          "featuredAd.createdAt": -1,
-        },
+        $sort: sortOption,
       },
       {
         $facet: {
