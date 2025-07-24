@@ -77,7 +77,7 @@ const oauthLogin = async (req, res, next) => {
       user: newUser?.uuid,
       token: refreshToken,
     });
-
+    console.log(1);
     res.status(200).json({
       accessToken,
       refreshToken,
