@@ -35,7 +35,7 @@ const oauthLogin = async (req, res, next) => {
           token: refreshToken,
         });
 
-        return res.status(201).json({
+        return res.status(200).json({
           accessToken,
           refreshToken,
           newUser: false,
@@ -78,7 +78,7 @@ const oauthLogin = async (req, res, next) => {
       token: refreshToken,
     });
 
-    res.status(201).json({
+    res.status(200).json({
       accessToken,
       refreshToken,
       newUser: true,

@@ -15,7 +15,7 @@ async function pushNotification({ expoPushToken, message }) {
       to: expoPushToken,
       sound: "default",
       body: message.body,
-      // data: message.data ?? {},
+      data: message.data ?? {},
     },
   ];
 

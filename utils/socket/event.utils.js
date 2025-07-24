@@ -164,6 +164,7 @@ const socketEvents = (io) => {
         attachments,
         uuid,
         audio,
+        senderName,
       } = data;
       const lastMessageTime = dayjs().unix();
       const lastMessage = message
@@ -329,8 +330,8 @@ const socketEvents = (io) => {
       const payload = {
         expoPushToken: receiverToken?.token,
         message: {
-          title: `New message from ${conversation?.receiver?.firstName}`,
-          body: `${lastMessage}`,
+          body: `You have a new message from ${senderName}`,
+          title: "New Message",
         },
       };
       await pushNotification(payload);

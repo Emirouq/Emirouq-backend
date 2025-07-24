@@ -1,7 +1,7 @@
 const httpErrors = require("http-errors");
 const User = require("../../models/User.model");
 const stripe = require("../../services/stripe/getStripe");
-
+const pushNotification = require("../../utils/pushNotification.utils");
 const getMe = async (req, res, next) => {
   try {
     const currentUser = req.user;
@@ -30,6 +30,14 @@ const getMe = async (req, res, next) => {
         },
       },
     ]);
+    const payload = {
+      expoPushToken: "ExponentPushToken[4iX8I2Aw-Uf_DQZAJcMNIt]",
+      message: {
+        title: "Welcome",
+        body: `Welcome back, ${user.firstName}`,
+      },
+    };
+    // await pushNotification(payload);
 
     res.status(200).json({
       success: true,
