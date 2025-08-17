@@ -27,11 +27,32 @@ const login = async (req, res, next) => {
     //   $or: [{ email }, { phoneNumber }],
     // });
     let userLogin = await User.findOne({
-      email,
-      oauthId: {
-        $exists: false,
-        $eq: null,
-      },
+      ...(phoneNumber && {
+        phoneNumber,
+      }),
+      ...(email && {
+        email: {
+          $regex: email,
+          $options: "i",
+        },
+        $or: [
+          {
+            oauthId: {
+              $exists: false,
+            },
+          },
+          {
+            oauthId: {
+              $eq: null,
+            },
+          },
+          {
+            oauthId: {
+              $eq: "",
+            },
+          },
+        ],
+      }),
     });
 
     if (!userLogin && phoneNumber) {

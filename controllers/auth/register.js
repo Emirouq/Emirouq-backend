@@ -6,6 +6,7 @@ const { upload } = require("../../services/util/upload-files");
 const { sendEmail, generateOTP } = require("../../services/util/sendEmail");
 const ResetPasswordModal = require("../../models/ResetPassword.model");
 const UserModel = require("../../models/User.model");
+const ProspectUser = require("../../models/ProspectUser.model");
 const registerTemplate = require("../../services/templates/register");
 
 const uploadFilesToAws = async (files, folderName) => {
@@ -41,6 +42,7 @@ const Register = async (req, res, next) => {
           userInterest,
         } = fields;
         console.log("fields", fields);
+
         if ((!email && !phoneNumber) || !password || !confirmPassword) {
           throw httpErrors.BadRequest(
             "Either Email or Phone Number,and passwords are required!"
@@ -48,6 +50,7 @@ const Register = async (req, res, next) => {
         }
 
         if (email) email = email[0].trim().toLowerCase();
+        if (phoneNumber) phoneNumber = phoneNumber[0].trim();
         if (userInterest) {
           try {
             userInterest = JSON.parse(userInterest[0]);
@@ -65,7 +68,24 @@ const Register = async (req, res, next) => {
         }
 
         if (email) {
-          const checkIfEmailExist = await UserModel.findOne({ email });
+          const checkIfEmailExist = await UserModel.findOne({
+            email: {
+              $regex: email,
+              $options: "i",
+            },
+            $or: [
+              {
+                oauthId: {
+                  $exists: false,
+                },
+              },
+              {
+                oauthId: {
+                  $eq: "",
+                },
+              },
+            ],
+          });
           if (checkIfEmailExist) {
             throw new httpErrors.Conflict(
               "This email is already registered. Please try another one!"
@@ -81,17 +101,17 @@ const Register = async (req, res, next) => {
             );
           }
         }
-        const checkIfEmailExistInOauth = await UserModel.findOne({
-          email,
-          oauthId: {
-            $exists: true,
-          },
-        });
-        if (checkIfEmailExistInOauth) {
-          throw new httpErrors.Conflict(
-            "This email is already registered with a social account. Please try another one!"
-          );
-        }
+        // const checkIfEmailExistInOauth = await UserModel.findOne({
+        //   email,
+        //   oauthId: {
+        //     $exists: true,
+        //   },
+        // });
+        // if (checkIfEmailExistInOauth) {
+        //   throw new httpErrors.Conflict(
+        //     "This email is already registered with a social account. Please try another one!"
+        //   );
+        // }
         if (password[0] !== confirmPassword[0]) {
           throw new httpErrors.BadRequest("Passwords do not match!");
         }
@@ -103,8 +123,10 @@ const Register = async (req, res, next) => {
         const identifier = email || phoneNumber;
         const token = Buffer.from(`${identifier}:${otp}`).toString("base64");
 
-        if (email) {
-          await ResetPasswordModal.deleteOne({ email });
+        if (email || phoneNumber) {
+          await ResetPasswordModal.deleteMany({
+            $or: [{ email }, { phoneNumber }],
+          });
         }
 
         const saveOtp = new ResetPasswordModal({
@@ -122,7 +144,7 @@ const Register = async (req, res, next) => {
           );
           profileImage = uploadedFile.url;
         }
-        const newUser = new UserModel({
+        const newUser = new ProspectUser({
           uuid: uuid(),
           firstName: firstName?.[0],
           ...(lastName && { lastName: lastName?.[0] }),

@@ -35,7 +35,6 @@ const UserSchema = new Schema(
     },
     email: {
       type: String,
-      // required: true,
       unique: true,
     },
 
@@ -77,6 +76,9 @@ const UserSchema = new Schema(
   },
   { timestamps: true }
 );
+
+UserSchema.index({ userHandle: 1 });
+UserSchema.index({ email: 1, oauthId: 1 });
 
 const User = model("User", UserSchema, "user");
 

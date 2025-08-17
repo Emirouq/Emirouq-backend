@@ -4,8 +4,8 @@ const { Schema, model } = require("mongoose");
 var resetPasswordSchema = new Schema(
   {
     otp: { type: String, required: true },
-    email: { type: String, unique: true },
-    phoneNumber: { type: Number, unique: true },
+    email: { type: String },
+    phoneNumber: { type: String },
     isVerified: { type: Boolean, default: false },
     createdAt: { type: Date, expires: "5m", default: Date.now },
   },
