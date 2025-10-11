@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon index.js",
-    "dev": "source $HOME/.nvm/nvm.sh; nvm use --lts;yarn;   nodemon index.js",
+    "dev": "bun i;  nodemon index.js",
     "lint": "eslint . --ext=js --fix;  exit 0"
   },
   "author": "",
@@ -40,6 +40,7 @@
     "nodemailer": "^6.9.13",
     "redis": "^4.7.0",
     "short-uuid": "^5.2.0",
+    "slugify": "^1.6.6",
     "socket.io": "^4.7.5",
     "socket.io-client": "^4.7.5",
     "stripe": "^18.0.0",

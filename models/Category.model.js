@@ -15,16 +15,6 @@ const CategorySchema = new Schema(
       type: String,
       required: true,
     },
-    // isActive: {
-    //   type: Boolean,
-    //   default: true,
-    // },
-    // properties: [
-    //   {
-    //     type: String,
-    //     required: true,
-    //   },
-    // ],
     planId: [
       {
         type: String,

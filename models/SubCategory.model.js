@@ -1,4 +1,4 @@
-const { Schema, model, Types } = require("mongoose");
+const { Schema, model } = require("mongoose");
 
 const SubCategorySchema = new Schema(
   {
@@ -11,10 +11,6 @@ const SubCategorySchema = new Schema(
       type: String,
       required: true,
     },
-    // logo: {
-    //   type: String,
-    //   required: true,
-    // },
     category: {
       type: String,
       ref: "Category",
@@ -24,12 +20,7 @@ const SubCategorySchema = new Schema(
       type: Boolean,
       default: true,
     },
-    properties: [
-      {
-        type: String,
-        required: true,
-      },
-    ],
+    properties: [{ type: String, ref: "Attribute" }],
   },
   { timestamps: true }
 );

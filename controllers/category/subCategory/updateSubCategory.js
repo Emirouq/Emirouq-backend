@@ -1,33 +1,87 @@
 const httpErrors = require("http-errors");
 const SubCategory = require("../../../models/SubCategory.model");
+const Attribute = require("../../../models/Attribute.model");
 const { v4: uuid } = require("uuid");
 
 const updateSubCategory = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    if (!id) {
+    const { subCategoryId, categoryId } = req.params;
+    if (!subCategoryId) {
       throw httpErrors.BadRequest("SubCategory ID is required");
     }
 
-    const { title, properties } = req.body;
-    let updateData = {};
+    const { title, properties, deletedProperties } = req.body;
 
-    if (title) updateData.title = title;
-    if (properties) updateData.properties = properties;
+    // Find the subcategory
+    const subCategory = await SubCategory.findOne({
+      uuid: subCategoryId,
+      category: categoryId,
+    });
 
-    const updatedSubCategory = await SubCategory.findOneAndUpdate(
-      { uuid: id },
-      updateData,
-      { new: true }
-    );
-
-    if (!updatedSubCategory) {
+    if (!subCategory) {
       throw httpErrors.NotFound("SubCategory not found");
     }
 
+    // Update title if provided
+    if (title) {
+      subCategory.title = title;
+    }
+
+    // Delete properties if provided
+    if (
+      deletedProperties &&
+      Array.isArray(deletedProperties) &&
+      deletedProperties.length
+    ) {
+      // Remove from subCategory properties array
+      subCategory.properties = subCategory.properties.filter(
+        (propUuid) => !deletedProperties.includes(propUuid)
+      );
+
+      // Remove Attribute documents
+      await Attribute.deleteMany({ uuid: { $in: deletedProperties } });
+    }
+
+    // Add or update properties
+    if (properties && Array.isArray(properties)) {
+      for (const prop of properties) {
+        const {
+          uuid: propUuid,
+          label,
+          filterType,
+          order,
+          visibleInFilter,
+        } = prop;
+
+        if (propUuid) {
+          // Update existing attribute
+          await Attribute.findOneAndUpdate(
+            { uuid: propUuid },
+            { label, filterType, order, visibleInFilter }
+          );
+        } else {
+          // Create new attribute
+          const newAttribute = new Attribute({
+            uuid: uuid(),
+            label,
+            filterType,
+            order,
+            visibleInFilter,
+            subCategory: subCategory.uuid,
+            category: categoryId,
+          });
+          await newAttribute.save();
+          subCategory.properties.push(newAttribute.uuid);
+        }
+      }
+    }
+
+    // Save the updated subcategory
+    await subCategory.save();
+
     res.status(200).json({
       message: "SubCategory updated successfully",
-      data: updatedSubCategory,
+      data: subCategory,
     });
   } catch (error) {
     next(error);
