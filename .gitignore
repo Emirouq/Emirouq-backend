@@ -26,3 +26,5 @@ first.json
 wealthsimple-api.js
 ws-trade.js
 read.js
+*.csv
+upload-csv-service.js

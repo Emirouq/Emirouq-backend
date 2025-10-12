@@ -10,17 +10,18 @@ const { Schema, model } = require("mongoose");
 
 const attributeOptionSchema = new Schema({
   uuid: { type: String, required: true, unique: true },
-  //if the attribute is dependent on another attribute, e.g., model depends on make
+  // this id refers to brand, model , year etc , for which these options are
   attributeId: { type: String, required: true, ref: "Attribute" }, // e.g. "make", "model"
-  value: { type: String, required: true }, // e.g. "Honda", "Civic"
-  parentAttribute: { type: String }, // e.g. "honda","bmw"
+  value: { type: String, required: true, trim: true }, // e.g. "Honda", "Civic"
+  parentId: { type: String }, // e.g. UUID of the parent attribute,
+  parentValue: { type: String, trim: true }, // e.g. "civic","accord"
 });
 
 attributeOptionSchema.index({ attributeId: 1 });
 attributeOptionSchema.index({ attributeId: 1, value: 1 }, { unique: true });
 attributeOptionSchema.index(
-  { attributeId: 1, parentAttribute: 1 },
-  { partialFilterExpression: { parentAttribute: { $exists: true } } }
+  { attributeId: 1, parentId: 1, parentValue: 1 },
+  { partialFilterExpression: { parentId: { $exists: true } } }
 );
 
 const AttributeOption = model(
