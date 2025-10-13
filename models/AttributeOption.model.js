@@ -11,10 +11,10 @@ const { Schema, model } = require("mongoose");
 const attributeOptionSchema = new Schema({
   uuid: { type: String, required: true, unique: true },
   // this id refers to brand, model , year etc , for which these options are
-  attributeId: { type: String, required: true, ref: "Attribute" }, // e.g. "make", "model"
-  value: { type: String, required: true, trim: true }, // e.g. "Honda", "Civic"
-  parentId: { type: String }, // e.g. UUID of the parent attribute,
-  parentValue: { type: String, trim: true }, // e.g. "civic","accord"
+  attributeId: { type: String, required: true, ref: "Attribute" }, // e.g. "brand", "model" uuid
+  value: { type: String, required: true, trim: true }, // e.g. "Honda", "Civic" , Bmw , M8 M4
+  parentId: { type: String }, // e.g. UUID of the parent attribute, eg: bmw uuid
+  parentValue: { type: String, trim: true }, // e.g. bmw
 });
 
 attributeOptionSchema.index({ attributeId: 1 });

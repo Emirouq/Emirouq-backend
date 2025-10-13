@@ -14,7 +14,7 @@ const getAttributeOptions = async (req, res, next) => {
     const searchCriteria = {};
 
     if (keyword) {
-      searchCriteria.value = { $regex: `^${keyword.trim()}`, $options: "i" };
+      searchCriteria.value = { $regex: `^${keyword.trim()}.*`, $options: "i" };
     }
     const data = await AttributeOption.aggregate([
       {
