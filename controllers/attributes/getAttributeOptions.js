@@ -2,7 +2,7 @@ const AttributeOption = require("../../models/AttributeOption.model");
 
 const getAttributeOptions = async (req, res, next) => {
   try {
-    const { keyword, start, limit } = req.query;
+    const { keyword, start, limit, dependsOn } = req.query;
     const { attributeId } = req.params;
     if (!attributeId) {
       return res.status(400).json({
@@ -22,13 +22,14 @@ const getAttributeOptions = async (req, res, next) => {
           ...searchCriteria,
           attributeId,
           parentId: {
-            $exists: false,
-            $eq: null,
+            $exists: dependsOn ? true : false,
+            ...(dependsOn ? { $ne: null } : { $eq: null }),
           },
         },
       },
       {
         $sort: {
+          parentValue: 1,
           value: 1,
         },
       },

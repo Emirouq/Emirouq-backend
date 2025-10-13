@@ -12,7 +12,7 @@ const attributeSchema = new Schema({
   attributeKey: { type: String, required: false }, // e.g. "brand", "model", "color", "size"
   filterType: {
     type: String,
-    enum: ["text", "number", "select", "checkbox", "range"],
+    enum: ["text", "number", "select", "checkbox"],
     required: true,
   },
   visibleInFilter: { type: Boolean, default: true },

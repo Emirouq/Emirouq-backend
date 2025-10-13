@@ -23,7 +23,7 @@ const addSubCategory = async (req, res, next) => {
     });
 
     for (const prop of properties) {
-      const { label, filterType, order, visibleInFilter } = prop;
+      const { label, filterType, order, visibleInFilter, dependsOn } = prop;
       const newAttribute = new Attribute({
         uuid: uuid(),
         label,
@@ -32,6 +32,7 @@ const addSubCategory = async (req, res, next) => {
         visibleInFilter,
         subCategory: newSubCategory.uuid,
         category: categoryId,
+        dependsOn,
       });
       await newAttribute.save();
       newSubCategory.properties.push(newAttribute.uuid);

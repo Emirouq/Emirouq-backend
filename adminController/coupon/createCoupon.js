@@ -47,7 +47,7 @@ const createCoupon = async (req, res, next) => {
       name: name?.toUpperCase()?.trim(),
       duration,
       ...(durationInMonths && { duration_in_months: +durationInMonths }),
-      ...(amountOff && { amount_off: +amountOff, currency: "USD" }),
+      ...(amountOff && { amount_off: +amountOff, currency: "aed" }),
       ...(percentOff && { percent_off: +percentOff }),
       ...(maxRedemptions && { max_redemptions: +maxRedemptions }),
       ...(redeemBy && { redeem_by: redeemBy }),

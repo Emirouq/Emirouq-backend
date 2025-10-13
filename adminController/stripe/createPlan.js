@@ -1,4 +1,3 @@
-const { default: mongoose } = require("mongoose");
 const SubscriptionPlan = require("../../models/SubscriptionPlan.model");
 const stripe = require("../../services/stripe/getStripe");
 const { round } = require("lodash");
@@ -28,7 +27,7 @@ const createPlan = async (req, res, next) => {
       const {
         name,
         amount,
-        currency = "INR",
+        currency = "aed",
         interval,
         interval_count,
         numberOfAds,

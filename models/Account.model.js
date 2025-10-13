@@ -35,7 +35,7 @@ const AccountSchema = new Schema(
     currency: {
       type: String,
       required: true,
-      default: "USD",
+      default: "aed",
     },
   },
   { timestamps: true }

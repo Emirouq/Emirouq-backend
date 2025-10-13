@@ -26,7 +26,7 @@ const paymentSheet = async (req, res, next) => {
     // if amount is coming from the request body, use that, otherwise use the plan amount
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount ? (amount * 100)?.toFixed(0) : plan?.amount * 100,
-      currency: "usd",
+      currency: "aed",
       customer: customerId,
       automatic_payment_methods: {
         enabled: true,

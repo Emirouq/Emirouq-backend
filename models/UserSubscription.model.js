@@ -47,6 +47,7 @@ const userSubscriptionModelSchema = new Schema({
     currency: {
       type: String,
       required: true,
+      default: "aed",
     },
     interval: {
       type: String,

@@ -51,13 +51,14 @@ const updateSubCategory = async (req, res, next) => {
           filterType,
           order,
           visibleInFilter,
+          dependsOn,
         } = prop;
 
         if (propUuid) {
           // Update existing attribute
           await Attribute.findOneAndUpdate(
             { uuid: propUuid },
-            { label, filterType, order, visibleInFilter }
+            { label, filterType, order, visibleInFilter, dependsOn }
           );
         } else {
           // Create new attribute
@@ -69,6 +70,7 @@ const updateSubCategory = async (req, res, next) => {
             visibleInFilter,
             subCategory: subCategory.uuid,
             category: categoryId,
+            dependsOn,
           });
           await newAttribute.save();
           subCategory.properties.push(newAttribute.uuid);
