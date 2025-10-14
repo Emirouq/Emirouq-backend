@@ -8,14 +8,19 @@ const { Schema, model } = require("mongoose");
     so that when i select brand as honda, it will show me all the models of honda only
 */
 
-const attributeOptionSchema = new Schema({
-  uuid: { type: String, required: true, unique: true },
-  // this id refers to brand, model , year etc , for which these options are
-  attributeId: { type: String, required: true, ref: "Attribute" }, // e.g. "brand", "model" uuid
-  value: { type: String, required: true, trim: true }, // e.g. "Honda", "Civic" , Bmw , M8 M4
-  parentId: { type: String }, // e.g. UUID of the parent attribute, eg: bmw uuid
-  parentValue: { type: String, trim: true }, // e.g. bmw
-});
+const attributeOptionSchema = new Schema(
+  {
+    uuid: { type: String, required: true, unique: true },
+    // this id refers to brand, model , year etc , for which these options are
+    attributeId: { type: String, required: true, ref: "Attribute" }, // e.g. "brand", "model" uuid
+    value: { type: String, required: true, trim: true }, // e.g. "Honda", "Civic" , Bmw , M8 M4
+    parentId: { type: String }, // e.g. UUID of the parent attribute, eg: bmw uuid
+    parentValue: { type: String, trim: true }, // e.g. bmw
+  },
+  {
+    timestamps: true,
+  }
+);
 
 attributeOptionSchema.index({ attributeId: 1 });
 attributeOptionSchema.index({ attributeId: 1, value: 1 });
