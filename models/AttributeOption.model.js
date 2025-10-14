@@ -18,7 +18,7 @@ const attributeOptionSchema = new Schema({
 });
 
 attributeOptionSchema.index({ attributeId: 1 });
-attributeOptionSchema.index({ attributeId: 1, value: 1 }, { unique: true });
+attributeOptionSchema.index({ attributeId: 1, value: 1 });
 attributeOptionSchema.index(
   { attributeId: 1, parentId: 1, parentValue: 1 },
   { partialFilterExpression: { parentId: { $exists: true } } }

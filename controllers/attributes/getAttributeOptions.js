@@ -2,7 +2,7 @@ const AttributeOption = require("../../models/AttributeOption.model");
 
 const getAttributeOptions = async (req, res, next) => {
   try {
-    const { keyword, start, limit, dependsOn } = req.query;
+    const { keyword, start, limit } = req.query;
     const { attributeId } = req.params;
     if (!attributeId) {
       return res.status(400).json({
@@ -16,15 +16,12 @@ const getAttributeOptions = async (req, res, next) => {
     if (keyword) {
       searchCriteria.value = { $regex: `^${keyword.trim()}.*`, $options: "i" };
     }
+
     const data = await AttributeOption.aggregate([
       {
         $match: {
           ...searchCriteria,
           attributeId,
-          parentId: {
-            $exists: dependsOn ? true : false,
-            ...(dependsOn ? { $ne: null } : { $eq: null }),
-          },
         },
       },
       {
