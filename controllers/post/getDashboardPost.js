@@ -99,6 +99,7 @@ const getDashboardPost = async (req, res, next) => {
     byCategory.forEach((cat) => {
       if (cat?.categoryName && cat?.posts?.length) {
         sections.push({
+          categoryId: cat._id,
           title: cat.categoryName,
           data: cat.posts,
         });
