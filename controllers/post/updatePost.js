@@ -62,13 +62,14 @@ const updatePost = async (req, res, next) => {
       let parsedProperties = [];
       if (fields.properties) {
         try {
-          parsedProperties = JSON.parse(fields.properties[0]).map((prop) => {
-            if (!prop.name || !prop.value) {
+          const parsed = JSON.parse(fields.properties[0]);
+          parsedProperties = parsed?.map((prop) => {
+            if (!prop.label || !prop.selectedValue) {
               throw httpErrors.BadRequest(
                 "Each property must have a name and value"
               );
             }
-            return { name: prop.name, value: prop.value };
+            return prop;
           });
         } catch (error) {
           throw httpErrors.BadRequest("Invalid properties format");

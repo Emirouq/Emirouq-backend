@@ -16,11 +16,7 @@ router.use("/support", jwtValidation, require("./Support.route"));
 router.use("/account", jwtValidation, require("./Account.route"));
 router.use("/user", jwtValidation, require("./User.route"));
 router.use("/category", require("./Category.route"));
-router.use(
-  "/category/subCategory",
-
-  require("./SubCategory.route")
-);
+router.use("/category/subCategory", require("./SubCategory.route"));
 router.use("/post", require("./Post.route"));
 router.use("/conversation", jwtValidation, require("./Conversation.route"));
 router.use("/attributes", jwtValidation, require("./Attribute.route"));

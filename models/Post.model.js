@@ -67,8 +67,12 @@ const PostSchema = new Schema(
     category: { type: String, ref: "Category", required: true },
     properties: [
       {
-        name: { type: String, required: true },
-        value: { type: String, required: true },
+        uuid: { type: String, required: true },
+        label: { type: String, required: true },
+        filterType: { type: String, required: true },
+        dependsOn: { type: String, required: false },
+        attributeKey: { type: String, required: true },
+        selectedValue: { type: Schema.Types.Mixed, required: true },
       },
     ],
     // addOns: [

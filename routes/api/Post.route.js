@@ -14,7 +14,9 @@ const likePost = require("../../controllers/post/likePost");
 const addComment = require("../../controllers/post/addComment");
 const createSubscriptionForFeatureAd = require("../../controllers/post/createSubscriptionForFeatureAd");
 const getPostsByCategory = require("../../controllers/post/getPostsByCategory");
+const getDashboardPost = require("../../controllers/post/getDashboardPost");
 
+router.get("/get-dashboard-post", getDashboardPost);
 router.get("/", getPosts);
 router.get("/featured-ads", getFeaturedAds);
 router.get("/list", getAdsPost);
@@ -22,7 +24,6 @@ router.get("/:id", getSinglePost);
 const jwtValidation = require("../../middlewares/jwt_validation");
 const deletePost = require("../../controllers/post/deletePost");
 router.get("/:categoryId/similar", getPostsByCategory);
-
 router.post("/", jwtValidation, addPost);
 router.put("/updateStatus/:id", jwtValidation, updatePostStatus);
 router.put("/:id", jwtValidation, updatePost);

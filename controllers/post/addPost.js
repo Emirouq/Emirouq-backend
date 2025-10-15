@@ -71,12 +71,12 @@ const addPost = async (req, res, next) => {
       try {
         const parsed = JSON.parse(fields.properties[0]);
         parsedProperties = parsed?.map((prop) => {
-          if (!prop.name || !prop.value) {
+          if (!prop.label || !prop.selectedValue) {
             throw httpErrors.BadRequest(
               "Each property must have a name and value"
             );
           }
-          return { name: prop.name, value: prop.value };
+          return prop;
         });
       } catch (error) {
         throw httpErrors.BadRequest(

@@ -1,7 +1,14 @@
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 dayjs.extend(utc);
-const searchBy = ({ status, keyword, userId, priceRange, category }) => {
+const searchBy = ({
+  status,
+  keyword,
+  userId,
+  priceRange,
+  category,
+  subCategory,
+}) => {
   let searchCriteria = {};
   if (status) {
     searchCriteria.status = status;
@@ -51,6 +58,9 @@ const searchBy = ({ status, keyword, userId, priceRange, category }) => {
   }
   if (category) {
     searchCriteria.category = category;
+  }
+  if (subCategory) {
+    searchCriteria.subCategory = subCategory;
   }
 
   return searchCriteria;

@@ -12,6 +12,7 @@ const getAdsPost = async (req, res, next) => {
       sortBy,
       priceRange,
       category,
+      subCategory,
       keyword,
     } = req.query;
     // const { uuid: userId } = req.user;
@@ -21,6 +22,7 @@ const getAdsPost = async (req, res, next) => {
       userId,
       priceRange,
       category,
+      subCategory,
       keyword,
     });
     const sortOption = SORT_MAP[sortBy] || { createdAt: -1 }; // default to newest if sortBy is not provided
@@ -28,15 +30,11 @@ const getAdsPost = async (req, res, next) => {
       {
         $match: {
           ...searchCriteria,
-          // $or: [
-          //   {
-          //     isExpired: false,
-          //   },
-          //   //for free users
-          //   {
-          //     expirationDate: { $gt: Date.now() },
-          //   },
-          // ],
+          $or: [
+            {
+              isExpired: false,
+            },
+          ],
         },
       },
       {
