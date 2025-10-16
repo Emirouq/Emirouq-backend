@@ -106,10 +106,33 @@ const getSinglePost = async (req, res, next) => {
           },
         },
       },
+      // {
+      //   $set: {
+      //     comments: {
+      //       $reverseArray: "$comments",
+      //     },
+      //   },
+      // },
+      // {
+      //   $replaceRoot: {
+      //     newRoot: {
+      //       $mergeObjects: ["$doc", { comments: "$comments" }],
+      //     },
+      //   },
+      // },
       {
         $set: {
           comments: {
-            $reverseArray: "$comments",
+            $cond: {
+              if: {
+                $and: [
+                  { $isArray: "$comments" },
+                  { $gt: [{ $size: "$comments" }, 0] },
+                ],
+              },
+              then: { $reverseArray: "$comments" },
+              else: [],
+            },
           },
         },
       },
