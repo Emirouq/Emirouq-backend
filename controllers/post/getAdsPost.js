@@ -14,6 +14,7 @@ const getAdsPost = async (req, res, next) => {
       category,
       subCategory,
       keyword,
+      properties, // add this line
     } = req.query;
     // const { uuid: userId } = req.user;
     // for search by status, result, tradeType, tags, keyword, startDate, endDate
@@ -25,11 +26,33 @@ const getAdsPost = async (req, res, next) => {
       subCategory,
       keyword,
     });
+    let search = {};
+    if (keyword) {
+      search.title = {
+        $regex: `${keyword.trim()}.*`,
+        $options: "i",
+      };
+    }
+    // 🧩 handle multiple property filters
+    let propertyFilter = {};
+    if (properties) {
+      // normalize into array
+      const propertyValues = Array.isArray(properties)
+        ? properties
+        : properties.split(",");
+
+      propertyFilter["properties.selectedValue.value"] = {
+        $in: propertyValues.map((v) => new RegExp(`^${v.trim()}`, "i")),
+      };
+    }
+
     const sortOption = SORT_MAP[sortBy] || { createdAt: -1 }; // default to newest if sortBy is not provided
     const data = await Post.aggregate([
       {
         $match: {
           ...searchCriteria,
+          ...search,
+          ...propertyFilter,
           $or: [
             {
               isExpired: false,

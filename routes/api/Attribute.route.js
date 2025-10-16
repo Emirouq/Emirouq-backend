@@ -8,7 +8,7 @@ const addAttributeOption = require("../../controllers/attributes/addAttributeOpt
 const router = require("express").Router();
 
 //if will return brand models , year etc
-router.get("/:subCategoryId", getAttributes);
+router.get("/:id", getAttributes);
 
 //if will return attribute options ex: bmw , audi etc
 router.get("/:attributeId/options", getAttributeOptions);

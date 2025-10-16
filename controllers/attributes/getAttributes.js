@@ -3,8 +3,8 @@ const Attribute = require("../../models/Attribute.model");
 const getAttributes = async (req, res, next) => {
   try {
     const { keyword, start, limit } = req.query;
-    const { subCategoryId } = req.params;
-    if (!subCategoryId) {
+    const { id } = req.params;
+    if (!id) {
       return res.status(400).json({
         message: "Sub category id is required",
         success: false,
@@ -19,7 +19,7 @@ const getAttributes = async (req, res, next) => {
       {
         $match: {
           ...searchCriteria,
-          subCategory: subCategoryId,
+          $or: [{ subCategory: id }],
         },
       },
       {
