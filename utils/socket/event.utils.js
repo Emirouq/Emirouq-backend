@@ -420,14 +420,16 @@ const socketEvents = (io) => {
     socket.on("disconnect", async () => {
       const user = await getUser(socket.id);
 
-      await Promise.all([
+      const [, , data] = await Promise.all([
         userLeavesApp(user?.userId),
         clearSocketCache(socket.id),
         saveUserLastOnlineTime(user?.userId),
       ]);
       const onlineUsers = await getAllOnlineUsers();
-      console.log(onlineUsers, "onlineUsers");
       io.emit("fetchOnlineUsers", onlineUsers);
+      data?.conversationIds?.map((i) =>
+        io.to(i).emit("updateLastOnlineStatus", data?.lastOnlineTime)
+      );
 
       console.log("User disconnected", socket.id);
     });
@@ -509,13 +511,14 @@ const saveUserLastOnlineTime = async (id) => {
   if (!id) {
     return;
   }
+  const lastOnlineTime = dayjs().toDate();
   await Conversation.updateMany(
     {
       "participants.user": id, // all conversations where user is a participant
     },
     {
       $set: {
-        "participants.$[elem].lastOnlineTime": dayjs().toDate(),
+        "participants.$[elem].lastOnlineTime": lastOnlineTime,
       },
     },
     {
@@ -524,7 +527,18 @@ const saveUserLastOnlineTime = async (id) => {
       ],
     }
   );
+
+  const allConversationIds = await Conversation.find(
+    {
+      "participants.user": id, // all conversations where user is a participant
+    },
+    { uuid: 1 }
+  );
   console.log("saved last online time");
+  return {
+    conversationIds: allConversationIds?.map((i) => i?.uuid),
+    lastOnlineTime,
+  };
 };
 const clearSocketCache = async (id) => {
   if (!id) {
