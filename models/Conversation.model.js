@@ -65,6 +65,9 @@ const conversationSchema = new Schema(
           type: Number,
           default: 0,
         },
+        lastOnlineTime: {
+          type: Date,
+        },
       },
     ],
     // in this the last message time will be updated when the user sends a message

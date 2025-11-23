@@ -52,6 +52,27 @@ const getConversation = async (req, res, next) => {
               0,
             ],
           },
+          receiverOnline: {
+            $let: {
+              vars: {
+                otherObj: {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: "$participants",
+                        as: "user",
+                        cond: { $ne: ["$$user.user", userId] },
+                      },
+                    },
+                    0,
+                  ],
+                },
+              },
+              in: {
+                lastOnlineTime: "$$otherObj.lastOnlineTime",
+              },
+            },
+          },
         },
       },
 

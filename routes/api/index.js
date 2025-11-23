@@ -19,6 +19,6 @@ router.use("/category", require("./Category.route"));
 router.use("/category/subCategory", require("./SubCategory.route"));
 router.use("/post", require("./Post.route"));
 router.use("/conversation", jwtValidation, require("./Conversation.route"));
-router.use("/attributes", jwtValidation, require("./Attribute.route"));
+router.use("/attributes", require("./Attribute.route"));
 
 module.exports = router;

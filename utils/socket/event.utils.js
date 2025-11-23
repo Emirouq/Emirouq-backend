@@ -423,6 +423,7 @@ const socketEvents = (io) => {
       await Promise.all([
         userLeavesApp(user?.userId),
         clearSocketCache(socket.id),
+        saveUserLastOnlineTime(user?.userId),
       ]);
       const onlineUsers = await getAllOnlineUsers();
       console.log(onlineUsers, "onlineUsers");
@@ -503,6 +504,27 @@ const userLeavesApp = async (id) => {
     return;
   }
   await redisClient.sRem("onlineUsers", id);
+};
+const saveUserLastOnlineTime = async (id) => {
+  if (!id) {
+    return;
+  }
+  await Conversation.updateMany(
+    {
+      "participants.user": id, // all conversations where user is a participant
+    },
+    {
+      $set: {
+        "participants.$[elem].lastOnlineTime": dayjs().toDate(),
+      },
+    },
+    {
+      arrayFilters: [
+        { "elem.user": id }, // update only logged-in user inside participants[]
+      ],
+    }
+  );
+  console.log("saved last online time");
 };
 const clearSocketCache = async (id) => {
   if (!id) {
