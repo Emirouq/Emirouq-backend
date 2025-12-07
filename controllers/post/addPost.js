@@ -39,8 +39,15 @@ const addPost = async (req, res, next) => {
       subCategory,
       locationName,
       locationPlaceId,
+      location,
     } = fields;
-    console.log("fields", fields);
+
+    if (location && location[0]) {
+      const raw = location[0]; // "\"{...}\""
+      const once = JSON.parse(raw); // "{...}"  ← still a string
+      location = JSON.parse(once); // { name: "...", placeId: "...", ... }
+    }
+
     const { uuid: userId } = req.user;
 
     const draftMode = isDraft?.[0];
@@ -117,8 +124,13 @@ const addPost = async (req, res, next) => {
         location: {
           name: locationName?.[0],
           placeId: locationPlaceId[0],
+          ...location,
         },
       }),
+      geometry: {
+        type: "Point",
+        coordinates: [location.lng, location.lat],
+      },
       ...(condition && { condition: condition[0] }),
       file: uploadedFiles,
       expirationDate: !draftMode ? endDate : null,

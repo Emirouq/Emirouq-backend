@@ -41,7 +41,7 @@ const updatePost = async (req, res, next) => {
         throw httpErrors.NotFound("Post not found");
       }
 
-      const {
+      let {
         title,
         description,
         price,
@@ -50,9 +50,16 @@ const updatePost = async (req, res, next) => {
         locationPlaceId,
         condition,
         isDraft,
+        location,
       } = fields;
       const draftMode = isDraft?.[0];
-      console.log(11, draftMode);
+
+      if (location && location[0]) {
+        const raw = location[0]; // "\"{...}\""
+        const once = JSON.parse(raw); // "{...}"  ← still a string
+        location = JSON.parse(once); // { name: "...", placeId: "...", ... }
+      }
+
       if (!draftMode) {
         if (!title) throw httpErrors.BadRequest("Title is required");
         if (!description)
@@ -114,6 +121,11 @@ const updatePost = async (req, res, next) => {
       existingPost.location = {
         name: locationName?.[0] || existingPost.location?.name,
         placeId: locationPlaceId?.[0] || existingPost.location?.placeId,
+        ...location,
+      };
+      existingPost.geometry = {
+        type: "Point",
+        coordinates: [location.lng, location.lat],
       };
       existingPost.condition = condition?.[0] || existingPost.condition;
       existingPost.properties =

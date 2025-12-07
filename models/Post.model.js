@@ -57,6 +57,39 @@ const PostSchema = new Schema(
       name: {
         type: String,
       },
+      street: {
+        type: String,
+      },
+      postalCode: {
+        type: String,
+      },
+      country: {
+        type: String,
+      },
+      countryCode: {
+        type: String,
+      },
+      state: {
+        type: String,
+      },
+      stateCode: {
+        type: String,
+      },
+      city: {
+        type: String,
+      },
+    },
+    geometry: {
+      coordinates: {
+        type: [Number], // [lng, lat]
+        required: true,
+      },
+      type: {
+        type: String,
+        enum: ["Point"],
+        required: true,
+        default: "Point",
+      },
     },
     timePeriod: {
       type: String,
@@ -75,6 +108,9 @@ const PostSchema = new Schema(
         selectedValue: { type: Schema.Types.Mixed, required: true },
       },
     ],
+    viewBy: {
+      type: String,
+    },
     // addOns: [
     //   {
     //     type: {
@@ -150,6 +186,7 @@ const PostSchema = new Schema(
   { timestamps: true }
 );
 
+PostSchema.index({ geometry: "2dsphere" });
 const Post = model("Post", PostSchema, "posts");
 
 module.exports = Post;
