@@ -15,6 +15,7 @@ const getAdsPost = async (req, res, next) => {
       subCategory,
       keyword,
       properties, // add this line
+      city,
     } = req.query;
     // const { uuid: userId } = req.user;
     // for search by status, result, tradeType, tags, keyword, startDate, endDate
@@ -25,6 +26,7 @@ const getAdsPost = async (req, res, next) => {
       category,
       subCategory,
       keyword,
+      city,
     });
     let search = {};
     if (keyword) {
@@ -92,6 +94,14 @@ const getAdsPost = async (req, res, next) => {
               $count: "count",
             },
           ],
+          maxPrice: [
+            {
+              $group: {
+                _id: null,
+                value: { $max: "$price" },
+              },
+            },
+          ],
         },
       },
     ]);
@@ -100,6 +110,7 @@ const getAdsPost = async (req, res, next) => {
       message: "Fetched successfully",
       data: data?.[0].data,
       count: data?.[0]?.count?.[0]?.count,
+      maxPrice: data?.[0]?.maxPrice?.[0]?.value || null,
     });
   } catch (error) {
     next(error);

@@ -8,6 +8,7 @@ const searchBy = ({
   priceRange,
   category,
   subCategory,
+  city,
 }) => {
   let searchCriteria = {};
   if (status) {
@@ -61,6 +62,9 @@ const searchBy = ({
   }
   if (subCategory) {
     searchCriteria.subCategory = subCategory;
+  }
+  if (city) {
+    searchCriteria.location.city = city;
   }
 
   return searchCriteria;

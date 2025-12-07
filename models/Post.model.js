@@ -108,9 +108,11 @@ const PostSchema = new Schema(
         selectedValue: { type: Schema.Types.Mixed, required: true },
       },
     ],
-    viewBy: {
-      type: String,
-    },
+    viewBy: [
+      {
+        type: String,
+      },
+    ],
     // addOns: [
     //   {
     //     type: {

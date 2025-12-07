@@ -23,6 +23,7 @@ router.get("/list", getAdsPost);
 router.get("/:id", getSinglePost);
 const jwtValidation = require("../../middlewares/jwt_validation");
 const deletePost = require("../../controllers/post/deletePost");
+const countViewPost = require("../../controllers/post/countViewPost");
 router.get("/:categoryId/similar", getPostsByCategory);
 router.post("/", jwtValidation, addPost);
 router.put("/updateStatus/:id", jwtValidation, updatePostStatus);
@@ -38,4 +39,5 @@ router.post(
   jwtValidation,
   createSubscriptionForFeatureAd
 );
+router.get("/count-view-post/:postId", jwtValidation, countViewPost);
 module.exports = router;
