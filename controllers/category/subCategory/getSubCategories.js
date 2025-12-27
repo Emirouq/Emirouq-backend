@@ -34,6 +34,7 @@ const getSubCategory = async (req, res, next) => {
           title: 1,
           category: 1,
           isActive: 1,
+          logo: 1,
           properties: {
             $sortArray: {
               input: "$properties",

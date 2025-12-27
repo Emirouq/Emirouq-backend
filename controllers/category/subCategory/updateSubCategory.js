@@ -2,6 +2,7 @@ const httpErrors = require("http-errors");
 const SubCategory = require("../../../models/SubCategory.model");
 const Attribute = require("../../../models/Attribute.model");
 const { v4: uuid } = require("uuid");
+const uploadBase64File = require("../../../services/util/upload-base64-file");
 
 const updateSubCategory = async (req, res, next) => {
   try {
@@ -10,7 +11,7 @@ const updateSubCategory = async (req, res, next) => {
       throw httpErrors.BadRequest("SubCategory ID is required");
     }
 
-    const { title, properties, deletedProperties } = req.body;
+    const { title, properties, deletedProperties, image } = req.body;
 
     // Find the subcategory
     const subCategory = await SubCategory.findOne({
@@ -78,6 +79,13 @@ const updateSubCategory = async (req, res, next) => {
       }
     }
 
+    if (image) {
+      const uploadedFile = await uploadBase64File(
+        { base64: image, fileName: title },
+        "sub-category"
+      );
+      subCategory.logo = uploadedFile.Location;
+    }
     // Save the updated subcategory
     await subCategory.save();
 

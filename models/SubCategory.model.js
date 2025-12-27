@@ -20,6 +20,10 @@ const SubCategorySchema = new Schema(
       type: Boolean,
       default: true,
     },
+    logo: {
+      type: String,
+      required: true,
+    },
     properties: [{ type: String, ref: "Attribute" }],
   },
   { timestamps: true }
