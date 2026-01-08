@@ -16,6 +16,7 @@ const getAdsPost = async (req, res, next) => {
       keyword,
       properties, // add this line
       city,
+      year,
     } = req.query;
     // const { uuid: userId } = req.user;
     // for search by status, result, tradeType, tags, keyword, startDate, endDate
@@ -105,12 +106,22 @@ const getAdsPost = async (req, res, next) => {
         },
       },
     ]);
+    const result = await Post.aggregate([
+      {
+        $group: {
+          _id: null,
+          maxPrice: { $max: "$price" },
+        },
+      },
+    ]);
+
+    const maxPrice = result[0]?.maxPrice || 0;
 
     res.json({
       message: "Fetched successfully",
       data: data?.[0].data,
       count: data?.[0]?.count?.[0]?.count,
-      maxPrice: data?.[0]?.maxPrice?.[0]?.value || null,
+      maxPrice: maxPrice,
     });
   } catch (error) {
     next(error);
