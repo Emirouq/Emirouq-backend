@@ -29,7 +29,7 @@ const updateAttributeOption = async (req, res, next) => {
         $set: {
           value,
         },
-      }
+      },
     );
     const findParent = await AttributeOption.findOne({
       parentId: attributeOptionId,
@@ -44,7 +44,7 @@ const updateAttributeOption = async (req, res, next) => {
           $set: {
             parentValue: value,
           },
-        }
+        },
       );
     }
     res.status(200).json({
