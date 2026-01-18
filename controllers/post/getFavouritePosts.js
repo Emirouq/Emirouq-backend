@@ -1,11 +1,14 @@
 const Post = require("../../models/Post.model");
 const User = require("../../models/User.model");
+const { searchBy } = require("../../utils/socket/searchBy");
 
 const getFavouritePosts = async (req, res, next) => {
   try {
-    const { start, limit } = req.query;
+    const { start, limit, city } = req.query;
     const { uuid: userId } = req.user;
-
+    const searchCriteria = searchBy({
+      city,
+    });
     const user = await User.findOne({ uuid: userId });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -15,6 +18,7 @@ const getFavouritePosts = async (req, res, next) => {
     const data = await Post.aggregate([
       {
         $match: {
+          ...searchCriteria,
           uuid: { $in: favouriteIds },
         },
       },

@@ -37,7 +37,7 @@ router.delete("/:id", jwtValidation, deletePost);
 router.post(
   "/createSubscriptionForFeatureAd/:postId",
   jwtValidation,
-  createSubscriptionForFeatureAd
+  createSubscriptionForFeatureAd,
 );
 router.get("/count-view-post/:postId", jwtValidation, countViewPost);
 module.exports = router;

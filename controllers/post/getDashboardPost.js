@@ -13,6 +13,7 @@ const getDashboardPost = async (req, res, next) => {
       priceRange,
       category,
       keyword,
+      city,
     } = req.query;
 
     // Build search filters
@@ -22,6 +23,7 @@ const getDashboardPost = async (req, res, next) => {
       priceRange,
       category,
       keyword,
+      city,
     });
 
     const sortOption = SORT_MAP[sortBy] || { createdAt: -1 };
@@ -29,9 +31,8 @@ const getDashboardPost = async (req, res, next) => {
     const data = await Post.aggregate([
       {
         $match: {
-          ...searchCriteria,
-          $or: [{ isExpired: false }],
           status: "active",
+          $or: [{ isExpired: false }],
         },
       },
       {
@@ -56,11 +57,15 @@ const getDashboardPost = async (req, res, next) => {
           featured: [
             {
               $match: {
+                ...searchCriteria,
                 "featuredAd.isFeatured": true,
               },
             },
           ],
           byCategory: [
+            {
+              $match: searchCriteria,
+            },
             {
               $group: {
                 _id: "$category.uuid",

@@ -10,7 +10,11 @@ const searchBy = ({
   subCategory,
   city,
 }) => {
-  let searchCriteria = {};
+  let searchCriteria = {
+    // "location.city": {
+    //   $exists: true,
+    // },
+  };
   if (status) {
     searchCriteria.status = status;
   }
@@ -64,7 +68,18 @@ const searchBy = ({
     searchCriteria.subCategory = subCategory;
   }
   if (city) {
-    searchCriteria.location.city = city;
+    searchCriteria = {
+      ...searchCriteria,
+      $or: [
+        { "location.city": city },
+        {
+          "location.name": {
+            $regex: `${city}.*`,
+            $options: "i",
+          },
+        },
+      ],
+    };
   }
 
   return searchCriteria;

@@ -12,6 +12,7 @@ const getPosts = async (req, res, next) => {
       categoryId,
       subCategoryId,
       status,
+      city,
     } = req.query;
 
     let data;
