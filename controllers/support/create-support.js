@@ -43,13 +43,13 @@ const createSupport = async (req, res, next) => {
     title = title?.[0];
     description = description?.[0];
     if (!title || !description) {
-      return next(httpErrors(400, "All fields are required"));
+      throw new Error("All fields are required");
     }
 
     let attachments = [];
     if (files?.image?.length) {
       attachments = await Promise.all(
-        files?.image?.map((file) => uploadFilesToAws(file, `support/${user}`))
+        files?.image?.map((file) => uploadFilesToAws(file, `support/${user}`)),
       );
     }
 
@@ -77,7 +77,7 @@ const createSupport = async (req, res, next) => {
         ticketDescription: description,
         timestamp: supportTicket.createdAt,
         supportDashboardLink: "support@emiroue.ae",
-      })
+      }),
       // "noreply@tradelizer.com"
     );
     res.status(200).json({

@@ -26,7 +26,7 @@ app.use(
     limit: "50mb",
     extended: true,
     parameterLimit: 50000,
-  })
+  }),
 );
 app.use(express.json({ limit: "50mb", extended: true }));
 
@@ -48,16 +48,16 @@ app.use(routes);
 mongoose
   .connect(dbUrl)
   .then(() =>
-    console.log(`${chalk.green("✓")} ${chalk.blue("MongoDB Connected!")}`)
+    console.log(`${chalk.green("✓")} ${chalk.blue("MongoDB Connected!")}`),
   )
   .then(async () => {
     http.listen(port, () => {
       console.log(
         `${chalk.green("✓")} ${chalk.blue(
-          "Server Started on port"
+          "Server Started on port",
         )} http://${chalk.bgMagenta.white("localhost")}:${chalk.bgMagenta.white(
-          port
-        )}`
+          port,
+        )}`,
       );
     });
     require("./utils/socket/event.utils")(io);

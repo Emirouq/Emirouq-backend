@@ -27,11 +27,32 @@ const addCategory = async (req, res, next) => {
         }
 
         // const { title, properties } = fields;
-        const { title } = fields;
-        console.log("fields", fields);
-        console.log("files", files);
+        const { title, index } = fields;
         if (!title) {
           throw httpErrors.BadRequest("Title is required");
+        }
+
+        const existingTitleCategory = await Category.findOne({
+          title: title[0],
+        });
+        if (existingTitleCategory) {
+          throw httpErrors.Conflict("Category with this title already exists");
+        }
+
+        if (!index) {
+          throw httpErrors.BadRequest("Index is required");
+        }
+
+        const categoryIndex = Number(index[0]);
+        if (isNaN(categoryIndex)) {
+          throw httpErrors.BadRequest("Index must be a valid number");
+        }
+
+        const existingIndexCategory = await Category.findOne({
+          index: categoryIndex,
+        });
+        if (existingIndexCategory) {
+          throw httpErrors.Conflict("Category with this index already exists");
         }
 
         // let parsedProperties;
@@ -52,7 +73,7 @@ const addCategory = async (req, res, next) => {
         if (files?.logo) {
           const uploadedFile = await uploadFilesToAws(
             files.logo[0],
-            "categories"
+            "categories",
           );
           logo = uploadedFile.url;
         }
@@ -60,6 +81,7 @@ const addCategory = async (req, res, next) => {
         const newCategory = new Category({
           uuid: uuid(),
           title: title[0],
+          index: categoryIndex,
           // properties: parsedProperties,
           logo,
           // isActive: true,
@@ -71,7 +93,7 @@ const addCategory = async (req, res, next) => {
           category: newCategory,
         });
       } catch (error) {
-        next(error);
+        return next(error);
       }
     });
   } catch (error) {

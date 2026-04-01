@@ -15,6 +15,10 @@ const CategorySchema = new Schema(
       type: String,
       required: true,
     },
+    index: {
+      type: Number,
+      required: true,
+    },
     planId: [
       {
         type: String,

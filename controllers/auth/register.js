@@ -45,7 +45,7 @@ const Register = async (req, res, next) => {
 
         if ((!email && !phoneNumber) || !password || !confirmPassword) {
           throw httpErrors.BadRequest(
-            "Either Email or Phone Number,and passwords are required!"
+            "Either Email or Phone Number,and passwords are required!",
           );
         }
 
@@ -62,7 +62,7 @@ const Register = async (req, res, next) => {
             }
           } catch (error) {
             throw httpErrors.BadRequest(
-              "Invalid userInterest format. It should be an array of strings."
+              "Invalid userInterest format. It should be an array of strings.",
             );
           }
         }
@@ -88,7 +88,7 @@ const Register = async (req, res, next) => {
           });
           if (checkIfEmailExist) {
             throw new httpErrors.Conflict(
-              "This email is already registered. Please try another one!"
+              "This email is already registered. Please try another one!",
             );
           }
         }
@@ -97,7 +97,7 @@ const Register = async (req, res, next) => {
           const checkIfPhoneExist = await UserModel.findOne({ phoneNumber });
           if (checkIfPhoneExist) {
             throw new httpErrors.Conflict(
-              "This phone number is already registered."
+              "This phone number is already registered.",
             );
           }
         }
@@ -140,7 +140,7 @@ const Register = async (req, res, next) => {
         if (files?.profileImage) {
           const uploadedFile = await uploadFilesToAws(
             files.profileImage[0],
-            "users"
+            "users",
           );
           profileImage = uploadedFile.url;
         }
@@ -161,7 +161,7 @@ const Register = async (req, res, next) => {
           await sendEmail(
             [email],
             `Welcome to Emirouq`,
-            registerTemplate({ name: `${firstName} ${lastName || ""}`, otp })
+            registerTemplate({ name: `${firstName} ${lastName || ""}`, otp }),
           );
         }
         await newUser.save();
@@ -173,7 +173,7 @@ const Register = async (req, res, next) => {
           token,
         });
       } catch (error) {
-        next(error);
+        return next(err);
       }
     });
   } catch (error) {

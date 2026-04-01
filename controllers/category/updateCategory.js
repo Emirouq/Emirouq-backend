@@ -15,14 +15,31 @@ const updateCategory = async (req, res, next) => {
     form.parse(req, async (err, fields, files) => {
       try {
         if (err) {
-          throw httpErrors.BadRequest("Error parsing form data");
+          return next(httpErrors.BadRequest("Error parsing form data"));
         }
 
-        const { title } = fields;
+        const { title, index } = fields;
         console.log("fields", fields);
         let updateData = {};
 
         if (title) updateData.title = title[0];
+
+        if (index) {
+          const categoryIndex = Number(index[0]);
+          if (isNaN(categoryIndex)) {
+            throw new Error("Index must be a valid number");
+          }
+
+          const existingIndexCategory = await Category.findOne({
+            index: categoryIndex,
+            uuid: { $ne: id },
+          });
+          if (existingIndexCategory) {
+            throw new Error("Category with this index already exists");
+          }
+
+          updateData.index = categoryIndex;
+        }
 
         // if (properties) {
         //   try {
@@ -46,7 +63,7 @@ const updateCategory = async (req, res, next) => {
             files.logo[0].filepath,
             files.logo[0].originalFilename,
             "categories",
-            files.logo[0].mimetype
+            files.logo[0].mimetype,
           );
           updateData.logo = uploadedFile.Location;
         }
@@ -54,7 +71,7 @@ const updateCategory = async (req, res, next) => {
         const updatedCategory = await Category.findOneAndUpdate(
           { uuid: id },
           updateData,
-          { new: true }
+          { new: true },
         );
 
         if (!updatedCategory) {
@@ -66,7 +83,7 @@ const updateCategory = async (req, res, next) => {
           category: updatedCategory,
         });
       } catch (error) {
-        next(error);
+        return next(error);
       }
     });
   } catch (error) {

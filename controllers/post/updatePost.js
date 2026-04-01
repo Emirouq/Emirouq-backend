@@ -73,7 +73,7 @@ const updatePost = async (req, res, next) => {
           parsedProperties = parsed?.map((prop) => {
             if (!prop.label || !prop.selectedValue) {
               throw httpErrors.BadRequest(
-                "Each property must have a name and value"
+                "Each property must have a name and value",
               );
             }
             return prop;
@@ -104,8 +104,8 @@ const updatePost = async (req, res, next) => {
         console.log("imageFiles", imageFiles);
         const uploaded = await Promise.all(
           imageFiles.map((file) =>
-            uploadFilesToAws([file], `posts/${userId}`).then((res) => res[0])
-          )
+            uploadFilesToAws([file], `posts/${userId}`).then((res) => res[0]),
+          ),
         );
 
         uploadedFiles.push(...uploaded);
@@ -145,7 +145,7 @@ const updatePost = async (req, res, next) => {
         data: existingPost,
       });
     } catch (error) {
-      next(error);
+      return next(err);
     }
   } catch (error) {
     next(error);

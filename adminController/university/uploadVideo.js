@@ -32,7 +32,7 @@ const thumbnail = async (files, folderName) => {
           console.log(resizeImage, "resizeImage");
           return resizeImage;
         }
-      }
+      },
     );
 };
 const uploadVideo = async (req, res, next) => {
@@ -61,7 +61,7 @@ const uploadVideo = async (req, res, next) => {
         if (files?.[uploadType]?.[0]) {
           preview = await uploadFilesToAws(
             files?.[uploadType]?.[0],
-            `university-${isSectionExist?.section}`
+            `university-${isSectionExist?.section}`,
           );
         }
         await University.findOneAndUpdate(
@@ -80,14 +80,14 @@ const uploadVideo = async (req, res, next) => {
                 },
               }),
           },
-          { new: true }
+          { new: true },
         );
         return res.status(200).json({
           message: "",
           success: true,
         });
       } catch (err) {
-        next(err);
+        return next(err);
       }
     });
   } catch (error) {
