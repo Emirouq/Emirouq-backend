@@ -15,7 +15,7 @@ const getCategory = async (req, res, next) => {
       filter = { title: { $regex: keyword, $options: "i" } };
     }
 
-    const query = Category.find(filter).sort({ createdAt: -1 });
+    const query = Category.find(filter).sort({ index: 1 });
 
     let pagination = null;
 
