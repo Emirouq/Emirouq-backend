@@ -1,10 +1,13 @@
 const User = require("../../models/User.model");
 const Account = require("../../models/Account.model");
 const stripe = require("../../services/stripe/getStripe");
+const {
+  emitVerificationNotification,
+} = require("../../services/notification/verificationNotifications");
 const updateUserStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { isActive } = req.body;
+    const { isActive, verificationEvent, reason } = req.body;
     const [user, account] = await Promise.all([
       User.findOne({ uuid: id }),
       // fetch the accounts by created date
@@ -55,6 +58,23 @@ const updateUserStatus = async (req, res, next) => {
         },
         { $set: { status: "inactive" } }
       );
+    }
+
+    if (verificationEvent) {
+      await emitVerificationNotification(user, verificationEvent, {
+        initiatorId: req.user?.uuid || "system",
+        initiatorRole: "admin",
+        reason,
+        verificationStatus: verificationEvent,
+        push: true,
+      });
+    } else if (isActive) {
+      await emitVerificationNotification(user, "account_verified", {
+        initiatorId: req.user?.uuid || "system",
+        initiatorRole: "admin",
+        verificationStatus: "account_verified",
+        push: true,
+      });
     }
 
     res.json({

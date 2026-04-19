@@ -1,5 +1,8 @@
 const Post = require("../../models/Post.model");
 const createHttpError = require("http-errors");
+const {
+  notifyFavoriteItemUnavailable,
+} = require("../../services/notification/favoriteNotifications");
 
 const deletePost = async (req, res, next) => {
   try {
@@ -11,6 +14,11 @@ const deletePost = async (req, res, next) => {
       throw createHttpError(400, "Post not found!");
     }
 
+    await notifyFavoriteItemUnavailable(post, {
+      data: {
+        reason: "deleted",
+      },
+    });
     await Post.findOneAndDelete({ uuid: id });
 
     res.status(201).json({

@@ -9,6 +9,10 @@ const morgan = require("morgan");
 const { port, dbUrl } = require("./config/keys").host;
 const bodyParser = require("body-parser");
 const routes = require("./routes");
+const { startNotificationLifecycleWorker } = require("./bullmq/worker");
+const {
+  syncNotificationLifecycleJobs,
+} = require("./services/notification/jobs/lifecycleQueue");
 require("./utils/Redis.util");
 const io = require("socket.io")(http, {
   cors: {
@@ -61,5 +65,7 @@ mongoose
       );
     });
     require("./utils/socket/event.utils")(io);
+    startNotificationLifecycleWorker();
+    await syncNotificationLifecycleJobs();
   })
   .catch((err) => console.log(err));

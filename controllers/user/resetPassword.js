@@ -2,6 +2,9 @@ const UserModal = require("../../models/User.model");
 const createError = require("http-errors");
 const bcrypt = require("bcryptjs");
 const UserLoginMech = require("../../models/UserLoginMech.model");
+const {
+  emitVerificationNotification,
+} = require("../../services/notification/verificationNotifications");
 const resetPassword = async (req, res, next) => {
   try {
     const { token } = req.params;
@@ -17,7 +20,7 @@ const resetPassword = async (req, res, next) => {
     });
     const isMatch = await bcrypt.compare(
       currentPassword,
-      hashCurrentPassword?.password
+      hashCurrentPassword?.password,
     );
     if (!isMatch) {
       throw createError(400, "Current password is incorrect");
@@ -28,8 +31,15 @@ const resetPassword = async (req, res, next) => {
     await UserLoginMech.findOneAndUpdate(
       { user: userId },
       { password: hashedPassword },
-      { new: true }
+      { new: true },
     );
+
+    await emitVerificationNotification(userId, "password_changed", {
+      contextId: `password_changed:${userId}:${Date.now()}`,
+      contextType: "security",
+      dedupe: false,
+      push: true,
+    });
 
     return res.status(200).send({ message: "" });
   } catch (err) {

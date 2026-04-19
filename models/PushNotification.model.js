@@ -6,6 +6,8 @@ const pushNotificationSchema = new Schema({
   device: { type: String, required: true }, // Assuming you want to store the device type
   deviceId: { type: String, required: true }, // Unique identifier for the device
   deviceName: { type: String, required: true }, // Name of the device (
+  // this is the login information, on which devices its currently loggedIn
+  loggedIn: { type: Boolean, default: false },
 });
 
 pushNotificationSchema.index({ user: 1, deviceId: 1 }, { unique: true }); // Ensure unique deviceId per user

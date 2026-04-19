@@ -7,6 +7,9 @@ const User = require("../../models/User.model");
 const { hashPassword } = require("../../helpers/bcrypt");
 const AccountModel = require("../../models/Account.model");
 const stripe = require("../../services/stripe/getStripe");
+const {
+  emitVerificationNotification,
+} = require("../../services/notification/verificationNotifications");
 
 const setUpPassword = async (req, res, next) => {
   try {
@@ -70,6 +73,10 @@ const setUpPassword = async (req, res, next) => {
     };
 
     await user.save();
+    await emitVerificationNotification(user, "account_verified", {
+      verificationStatus: "account_verified",
+      push: true,
+    });
     await ProspectUser.deleteMany({ email: user.email }); // Delete the token after the user has been created
 
     res.status(200).json({

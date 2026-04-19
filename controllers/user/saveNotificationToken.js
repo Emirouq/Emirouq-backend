@@ -20,6 +20,13 @@ const saveNotificationToken = async (req, res, next) => {
       throw new createHttpError.BadRequest("Device information is incomplete");
     }
 
+    // Keep only the current saved device marked as logged in for this user.
+    await PushNotification.updateMany(
+      { user: existingUser.uuid },
+      { $set: { loggedIn: false } },
+      { session }
+    );
+
     const addNotificationToken = {
       updateOne: {
         // if the user already has a notification token, update it; otherwise, insert a new one
@@ -35,6 +42,7 @@ const saveNotificationToken = async (req, res, next) => {
             device,
             deviceId,
             deviceName,
+            loggedIn: true,
           },
           $setOnInsert: {
             uuid: generateUuid(), // generate a new UUID for the notification token

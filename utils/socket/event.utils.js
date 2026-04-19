@@ -4,8 +4,10 @@ const Conversation = require("../../models/Conversation.model");
 const ChatModel = require("../../models/Chat.model");
 const redisClient = require("../Redis.util");
 const { v4: uuid } = require("uuid");
-const PushNotificationModel = require("../../models/PushNotification.model");
-const pushNotification = require("../pushNotification.utils");
+const {
+  notificationService,
+  NotificationEventType,
+} = require("../../services/notification");
 const UserState = {
   users: [],
   setUsers: function (newUsers) {
@@ -134,7 +136,7 @@ const socketEvents = (io) => {
               "elem.user": userId,
             },
           ],
-        }
+        },
       );
       io.to(userId).emit("update_conversation_cache", {
         conversationId,
@@ -170,12 +172,12 @@ const socketEvents = (io) => {
       const lastMessage = message
         ? message
         : attachments?.length
-        ? `${attachments.length} new attachment ${
-            attachments.length > 1 ? "s" : ""
-          }`
-        : audio?.uri
-        ? "New audio message"
-        : "";
+          ? `${attachments.length} new attachment ${
+              attachments.length > 1 ? "s" : ""
+            }`
+          : audio?.uri
+            ? "New audio message"
+            : "";
 
       // check if the conversationId is valid
       if (!conversationId) {
@@ -197,7 +199,7 @@ const socketEvents = (io) => {
               visibleTo: receiverId,
             },
           },
-          { new: true }
+          { new: true },
         );
         conversation = await getConversationDetails(conversationId, receiverId);
 
@@ -240,7 +242,7 @@ const socketEvents = (io) => {
               "elem.user": senderId,
             },
           ],
-        }
+        },
       );
 
       let receiverRes;
@@ -267,7 +269,7 @@ const socketEvents = (io) => {
                 },
               },
             ],
-          }
+          },
         );
       }
       io.to(senderId).emit("update_conversation_cache", {
@@ -295,7 +297,7 @@ const socketEvents = (io) => {
         ...(receiverRes
           ? {
               chatDetails: receiverRes?.participants.find(
-                (user) => user.user === receiverId
+                (user) => user.user === receiverId,
               ),
             }
           : // receiver is in the conversation
@@ -313,9 +315,6 @@ const socketEvents = (io) => {
         seenBy = [senderId, receiverId];
       }
 
-      const receiverToken = await PushNotificationModel.findOne({
-        user: receiverId,
-      });
       // // add the message to the conversation on receiver side
       const messageData = buildMessage({
         uuid,
@@ -327,14 +326,24 @@ const socketEvents = (io) => {
         audio,
         seenBy,
       });
-      const payload = {
-        expoPushToken: receiverToken?.token,
-        message: {
-          body: `You have a new message from ${senderName}`,
-          title: "New Message",
-        },
-      };
-      await pushNotification(payload);
+      notificationService
+        .emit(NotificationEventType.MESSAGE_RECEIVED, {
+          initiatorId: senderId,
+          receiverId,
+          initiatorRole: "customer",
+          receiverRole: "customer",
+          initiatorName: senderName,
+          contextId: conversationId,
+          contextType: "message",
+          data: {
+            conversationId,
+            messageId: uuid,
+            message: `You have a new message from ${senderName}`,
+          },
+        })
+        .catch((error) => {
+          console.error("Message notification failed:", error);
+        });
 
       io.to(receiverId).emit("message", {
         message: messageData,
@@ -377,7 +386,7 @@ const socketEvents = (io) => {
           $addToSet: {
             seenBy: [userId, receiverId],
           },
-        }
+        },
       );
 
       // send the seen message to the receiver , that the message has been seen
@@ -428,7 +437,7 @@ const socketEvents = (io) => {
       const onlineUsers = await getAllOnlineUsers();
       io.emit("fetchOnlineUsers", onlineUsers);
       data?.conversationIds?.map((i) =>
-        io.to(i).emit("updateLastOnlineStatus", data?.lastOnlineTime)
+        io.to(i).emit("updateLastOnlineStatus", data?.lastOnlineTime),
       );
 
       console.log("User disconnected", socket.id);
@@ -525,14 +534,14 @@ const saveUserLastOnlineTime = async (id) => {
       arrayFilters: [
         { "elem.user": id }, // update only logged-in user inside participants[]
       ],
-    }
+    },
   );
 
   const allConversationIds = await Conversation.find(
     {
       "participants.user": id, // all conversations where user is a participant
     },
-    { uuid: 1 }
+    { uuid: 1 },
   );
   console.log("saved last online time");
   return {
@@ -574,6 +583,6 @@ const getUsersInRoom = async (conversationId) => {
 //get all active rooms
 const getAllActiveRooms = () => {
   return Array.from(
-    new Set(UserState.users.map((user) => user?.conversationId))
+    new Set(UserState.users.map((user) => user?.conversationId)),
   );
 };

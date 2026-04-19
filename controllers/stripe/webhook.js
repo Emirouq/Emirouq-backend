@@ -9,6 +9,9 @@ const {
   customerSubscriptionUpdated,
   subscriptionCancelled,
   paymentIntent,
+  paymentIntentFailed,
+  invoicePaymentFailed,
+  refundUpdated,
 } = require("../../services/stripe/webhooksEvents");
 const webhook = async (req, res) => {
   let data;
@@ -22,7 +25,7 @@ const webhook = async (req, res) => {
   console.log(
     "*************** webhook event type: ",
     eventType,
-    " ***************"
+    " ***************",
   );
   // if (!data?.object?.parent?.subscription_details?.subscription) {
   //   console.log("No subscription found in the event data");
@@ -62,7 +65,16 @@ const webhook = async (req, res) => {
     case "payment_intent.succeeded":
       paymentIntent(data);
       break;
+    case "payment_intent.payment_failed":
+      paymentIntentFailed(data);
+      break;
     case "invoice.payment_failed":
+      invoicePaymentFailed(data);
+      break;
+    case "refund.created":
+    case "refund.updated":
+    case "charge.refunded":
+      refundUpdated(data);
       break;
     case "customer.subscription.trial_will_end":
       break;

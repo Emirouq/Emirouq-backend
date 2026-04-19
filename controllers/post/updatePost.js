@@ -2,6 +2,10 @@ const httpErrors = require("http-errors");
 const Post = require("../../models/Post.model");
 const formidable = require("formidable");
 const { upload } = require("../../services/util/upload-files");
+const {
+  notifyFavoriteItemUpdated,
+  notifyFavoritePriceDrop,
+} = require("../../services/notification/favoriteNotifications");
 
 const uploadFilesToAws = async (files, folderName) => {
   const uploadedFiles = [];
@@ -40,6 +44,7 @@ const updatePost = async (req, res, next) => {
       if (!existingPost) {
         throw httpErrors.NotFound("Post not found");
       }
+      const oldPrice = existingPost.price;
 
       let {
         title,
@@ -137,6 +142,14 @@ const updatePost = async (req, res, next) => {
       existingPost.status = "pending";
 
       await existingPost.save();
+      await notifyFavoritePriceDrop(existingPost, oldPrice);
+      if (
+        oldPrice == null ||
+        existingPost.price == null ||
+        Number(existingPost.price) >= Number(oldPrice)
+      ) {
+        await notifyFavoriteItemUpdated(existingPost);
+      }
 
       res.status(200).json({
         message: draftMode
@@ -145,7 +158,7 @@ const updatePost = async (req, res, next) => {
         data: existingPost,
       });
     } catch (error) {
-      return next(err);
+      return next(error);
     }
   } catch (error) {
     next(error);

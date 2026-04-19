@@ -5,6 +5,9 @@ const { v4: uuid } = require("uuid");
 const { upload } = require("../../services/util/upload-files");
 const { accessChecker } = require("../../middlewares/access_checker");
 const UserSubscription = require("../../models/UserSubscription.model");
+const {
+  notifySavedSearchMatches,
+} = require("../../services/notification/favoriteNotifications");
 
 const uploadFilesToAws = async (files, folderName) => {
   const location = files?.path || files?.filepath;
@@ -80,14 +83,14 @@ const addPost = async (req, res, next) => {
         parsedProperties = parsed?.map((prop) => {
           if (!prop.label || !prop.selectedValue) {
             throw httpErrors.BadRequest(
-              "Each property must have a name and value"
+              "Each property must have a name and value",
             );
           }
           return prop;
         });
       } catch (error) {
         throw httpErrors.BadRequest(
-          error?.message || "Invalid properties format"
+          error?.message || "Invalid properties format",
         );
       }
     }
@@ -101,7 +104,7 @@ const addPost = async (req, res, next) => {
     // }
     if (files?.image?.length) {
       uploadedFiles = await Promise.all(
-        files?.image?.map((file) => uploadFilesToAws(file, `posts/${userId}`))
+        files?.image?.map((file) => uploadFilesToAws(file, `posts/${userId}`)),
       );
     }
     const categorySubscription = await UserSubscription.findOne({
@@ -141,6 +144,7 @@ const addPost = async (req, res, next) => {
     });
 
     await newPost.save();
+    await notifySavedSearchMatches(newPost);
     console.log(newPost, "newPost");
 
     res.status(201).json({

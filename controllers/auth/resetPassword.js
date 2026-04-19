@@ -3,6 +3,9 @@ const ResetPasswordModal = require("../../models/ResetPassword.model");
 const userLoginMech = require("../../models/UserLoginMech.model");
 const bcrypt = require("bcryptjs");
 const createError = require("http-errors");
+const {
+  emitVerificationNotification,
+} = require("../../services/notification/verificationNotifications");
 
 const resetPassword = async (req, res, next) => {
   try {
@@ -11,7 +14,7 @@ const resetPassword = async (req, res, next) => {
 
     if (!password || !confirmPassword) {
       throw createError.BadRequest(
-        "Password and Confirm Password are required"
+        "Password and Confirm Password are required",
       );
     }
     if (password !== confirmPassword) {
@@ -59,9 +62,15 @@ const resetPassword = async (req, res, next) => {
     const aa = await UserModal.findOneAndUpdate(
       { uuid: user.uuid },
       { password: hashedPassword },
-      { new: true }
+      { new: true },
     );
     console.log("aa", aa);
+    await emitVerificationNotification(user, "password_changed", {
+      contextId: `password_changed:${user.uuid}:${Date.now()}`,
+      contextType: "security",
+      dedupe: false,
+      push: true,
+    });
     // Delete OTP entry after successful password reset
 
     if (identifier?.includes("@")) {
