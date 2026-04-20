@@ -6,7 +6,6 @@ const { upload } = require("../../services/util/upload-files");
 const updateCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
-    console.log("id", id);
     if (!id) {
       throw httpErrors.BadRequest("Category ID is required");
     }
@@ -19,26 +18,48 @@ const updateCategory = async (req, res, next) => {
         }
 
         const { title, index } = fields;
-        console.log("fields", fields);
         let updateData = {};
+        let categoryToSwap = null;
+        let categoryIndex = null;
 
-        if (title) updateData.title = title[0];
+        const category = await Category.findOne({ uuid: id });
+        if (!category) {
+          throw httpErrors.NotFound("Category not found");
+        }
 
-        if (index) {
-          const categoryIndex = Number(index[0]);
-          if (isNaN(categoryIndex)) {
-            throw new Error("Index must be a valid number");
+        if (title) {
+          const categoryTitle = title[0]?.trim();
+          if (!categoryTitle) {
+            throw httpErrors.BadRequest("Title cannot be empty");
           }
 
-          const existingIndexCategory = await Category.findOne({
-            index: categoryIndex,
+          const existingTitleCategory = await Category.findOne({
+            title: categoryTitle,
             uuid: { $ne: id },
           });
-          if (existingIndexCategory) {
-            throw new Error("Category with this index already exists");
+          if (existingTitleCategory) {
+            throw httpErrors.Conflict("Category with this title already exists");
           }
 
-          updateData.index = categoryIndex;
+          updateData.title = categoryTitle;
+        }
+
+        if (index) {
+          categoryIndex = Number(index[0]);
+          if (!index[0] || isNaN(categoryIndex)) {
+            throw httpErrors.BadRequest("Index must be a valid number");
+          }
+
+          if (categoryIndex !== category.index) {
+            const existingIndexCategory = await Category.findOne({
+              index: categoryIndex,
+              uuid: { $ne: id },
+            });
+
+            categoryToSwap = existingIndexCategory;
+
+            updateData.index = categoryIndex;
+          }
         }
 
         // if (properties) {
@@ -68,18 +89,37 @@ const updateCategory = async (req, res, next) => {
           updateData.logo = uploadedFile.Location;
         }
 
-        const updatedCategory = await Category.findOneAndUpdate(
-          { uuid: id },
-          updateData,
-          { new: true },
-        );
+        let updatedCategory;
 
-        if (!updatedCategory) {
-          throw httpErrors.NotFound("Category not found");
+        if (categoryToSwap) {
+          const tempIndex = -Date.now();
+
+          await Category.updateOne(
+            { uuid: id },
+            { $set: { ...updateData, index: tempIndex } },
+          );
+
+          await Category.updateOne(
+            { uuid: categoryToSwap.uuid },
+            { $set: { index: category.index } },
+          );
+
+          updatedCategory = await Category.findOneAndUpdate(
+            { uuid: id },
+            { $set: { index: categoryIndex } },
+            { new: true },
+          );
+        } else {
+          updatedCategory = await Category.findOneAndUpdate(
+            { uuid: id },
+            updateData,
+            { new: true },
+          );
         }
 
         res.status(200).json({
           message: "Category updated successfully",
+          swappedCategory: categoryToSwap?.uuid || null,
           category: updatedCategory,
         });
       } catch (error) {
