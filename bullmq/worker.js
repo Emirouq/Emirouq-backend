@@ -14,7 +14,7 @@ const startNotificationLifecycleWorker = () => {
     {
       connection,
       concurrency: 1,
-    }
+    },
   );
 
   worker.on("completed", (job) => {
@@ -24,7 +24,7 @@ const startNotificationLifecycleWorker = () => {
   worker.on("failed", (job, err) => {
     console.error(
       `Notification lifecycle job failed: ${job?.name || "unknown"}`,
-      err
+      err,
     );
   });
 

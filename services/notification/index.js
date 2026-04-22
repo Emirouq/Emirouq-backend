@@ -5,6 +5,12 @@ const pushNotificationService = require("./pushService");
 
 class NotificationService {
   async emit(eventType, payload, options = {}) {
+    const {
+      ensureNotificationLifecycleJobs,
+    } = require("./jobs/lifecycleQueue");
+
+    await ensureNotificationLifecycleJobs();
+
     const resolver = notificationRules[eventType];
     if (!resolver) {
       throw new Error(`No notification rule defined for event: ${eventType}`);

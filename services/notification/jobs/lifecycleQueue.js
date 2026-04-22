@@ -1,12 +1,9 @@
-const {
-  notificationLifecycleQueue,
-} = require("../../../bullmq/queue");
-const {
-  NOTIFICATION_LIFECYCLE_JOBS,
-} = require("./lifecycleJobs");
+const { notificationLifecycleQueue } = require("../../../bullmq/queue");
+const { NOTIFICATION_LIFECYCLE_JOBS } = require("./lifecycleJobs");
 
 const REPEAT_EVERY = 60 * 60 * 1000;
 const ONE_DAY_SECONDS = 24 * 60 * 60;
+let lifecycleJobsEnsurePromise = null;
 
 const toReminderDelay = (unixEndDate, leadTimeSeconds = ONE_DAY_SECONDS) => {
   if (!unixEndDate) {
@@ -25,8 +22,19 @@ const getSchedulers = async () => {
 };
 
 const addNotificationLifecycleJob = async ({ jobName, jobId }) => {
+  const existingScheduler =
+    typeof notificationLifecycleQueue.getJobScheduler === "function"
+      ? await notificationLifecycleQueue.getJobScheduler(jobId)
+      : undefined;
+
+  if (existingScheduler) {
+    return;
+  }
+
   const schedulers = await getSchedulers();
-  const exists = schedulers.find((scheduler) => scheduler.id === jobId);
+  const exists = schedulers.find(
+    (scheduler) => scheduler.key === jobId || scheduler.id === jobId,
+  );
 
   if (exists) {
     return;
@@ -42,7 +50,7 @@ const addNotificationLifecycleJob = async ({ jobName, jobId }) => {
       },
       removeOnComplete: true,
       removeOnFail: 100,
-    }
+    },
   );
 };
 
@@ -59,7 +67,12 @@ const removeNotificationLifecycleJob = async (jobKeyId) => {
   await notificationLifecycleQueue.removeRepeatableByKey(jobKeyId);
 };
 
-const addOneTimeNotificationJob = async ({ jobName, jobId, payload, delay }) => {
+const addOneTimeNotificationJob = async ({
+  jobName,
+  jobId,
+  payload,
+  delay,
+}) => {
   const existingJob = await notificationLifecycleQueue.getJob(jobId);
   if (existingJob) {
     await existingJob.remove();
@@ -137,10 +150,24 @@ const syncNotificationLifecycleJobs = async () => {
   console.log("Notification lifecycle jobs initialized.");
 };
 
+const ensureNotificationLifecycleJobs = async () => {
+  if (!lifecycleJobsEnsurePromise) {
+    lifecycleJobsEnsurePromise = syncNotificationLifecycleJobs().catch(
+      (error) => {
+        lifecycleJobsEnsurePromise = null;
+        throw error;
+      },
+    );
+  }
+
+  return lifecycleJobsEnsurePromise;
+};
+
 module.exports = {
   addBoostExpiryReminderJob,
   addNotificationLifecycleJob,
   addPackageRenewalReminderJob,
+  ensureNotificationLifecycleJobs,
   removeNotificationLifecycleJob,
   syncNotificationLifecycleJobs,
 };
