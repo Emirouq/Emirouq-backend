@@ -7,6 +7,7 @@ const jwtValidation = require("../../middlewares/jwt_validation");
 
 router.use("/stripe", jwtValidation, require("./Stripe.route"));
 router.use("/me", jwtValidation, require("../../controllers/me/getMe"));
+router.use("/notifications", jwtValidation, require("./Notification.route"));
 router.use(
   "/auth/admin/me",
   jwtValidation,

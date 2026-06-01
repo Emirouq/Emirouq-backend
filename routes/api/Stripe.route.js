@@ -12,6 +12,7 @@ const deletePaymentMethod = require("../../controllers/stripe/deletePaymentMetho
 const changePaymentMethod = require("../../controllers/stripe/changePaymentMethod");
 const checkSubscription = require("../../controllers/stripe/checkSubscription");
 const checkSubscriptionForSpecificCategory = require("../../controllers/stripe/checkSubscriptionForSpecificCategory");
+const getMySubscriptions = require("../../controllers/stripe/getMySubscriptions");
 const refundPayment = require("../../controllers/stripe/refundPayment");
 // const roleCheck = require("../../middlewares/roleCheck");
 const createSubscription = require("../../controllers/stripe/createSubscription");
@@ -22,6 +23,7 @@ router.post("/update/session", changeSubscription);
 router.post("/payment-sheet/:planId", paymentSheet);
 router.post("/subscription", createSubscription);
 router.get("/check-subscription/:id", checkSubscription);
+router.get("/my-subscriptions", getMySubscriptions);
 router.put("/cancel-next-billing", cancelNextBilling);
 
 router.post("/subscription/trial", trialPeriodCheckout);
