@@ -19,7 +19,10 @@ const login = async (req, res, next) => {
     if (!email && !phoneNumber) {
       throw createHttpError.BadRequest("Email or phone number is required.");
     }
-    password = typeof password === "string" ? password : password?.[0];
+    password = typeof password === "string" ? password.trim() : password?.[0]?.trim();
+    if (!password) {
+      throw createHttpError.BadRequest("Password is required.");
+    }
 
     if (email) email = email.trim().toLowerCase();
 
@@ -70,13 +73,25 @@ const login = async (req, res, next) => {
         "Account not active. Please contact support."
       );
     }
-    console.log("password", userLogin, password, userLogin.password);
+
+    if (!userLogin.password) {
+      if (userLogin.oauthId && userLogin.oauthId !== "") {
+        throw createHttpError.BadRequest(
+          "This account uses social login. Please continue with Google, Facebook, or Apple."
+        );
+      }
+
+      throw createHttpError.BadRequest(
+        "This account does not have a password yet. Please reset your password or contact support."
+      );
+    }
+
     const isPasswordCorrect = await comparePassword(
       password,
       userLogin.password
     );
     if (!isPasswordCorrect) {
-      throw createHttpError.BadRequest("Incorrect password.");
+      throw createHttpError.BadRequest("Incorrect email or password.");
     }
 
     const payload = {

@@ -7,6 +7,14 @@ const hashPassword = async (password) => {
 };
 
 const comparePassword = async (password, hashedPassword) => {
+  if (
+    typeof password !== "string" ||
+    typeof hashedPassword !== "string" ||
+    !password ||
+    !hashedPassword
+  ) {
+    return false;
+  }
   const isMatch = await bcrypt.compare(password, hashedPassword);
   return isMatch;
 };

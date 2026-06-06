@@ -14,11 +14,19 @@ const createHttpError = require("http-errors");
  */
 const adminLogin = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+
+    if (!email) {
+      throw new createHttpError.BadRequest("Email is required.");
+    }
+    password = typeof password === "string" ? password.trim() : password?.[0]?.trim();
+    if (!password) {
+      throw new createHttpError.BadRequest("Password is required.");
+    }
 
     // check if carrier exists
     const userLogin = await AdminModel.findOne({
-      email,
+      email: email?.trim()?.toLowerCase(),
     });
     if (!userLogin)
       throw new createHttpError.BadRequest(
@@ -28,13 +36,18 @@ const adminLogin = async (req, res, next) => {
     const loginMech = await UserLoginMech.findOne({
       user: userLogin.uuid,
     });
+    if (!loginMech?.password) {
+      throw new createHttpError.BadRequest(
+        "This admin account does not have a password set. Please contact support."
+      );
+    }
     // check if password is correct
     const isPasswordCorrect = await comparePassword(
       password,
       loginMech.password
     );
     if (!isPasswordCorrect)
-      throw new createHttpError.BadRequest("Incorrect password");
+      throw new createHttpError.BadRequest("Incorrect email or password");
 
     const payload = {
       _id: userLogin?._id,
