@@ -1,4 +1,3 @@
-.env
 node_modules/
 mongo-tradelizer
 updateUserDetails.js
@@ -28,3 +27,4 @@ ws-trade.js
 read.js
 *.csv
 upload-csv-service.js
+config.bat

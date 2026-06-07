@@ -2,14 +2,11 @@ const Post = require("../../models/Post.model");
 const { SORT_MAP } = require("../../utils/numberUtils");
 const { searchBy } = require("../../utils/socket/searchBy");
 
-const getAdsPost = async (req, res, next) => {
+const getPostCount = async (req, res, next) => {
   try {
     const {
-      start,
-      limit,
       status,
       userId,
-      sortBy,
       priceRange,
       category,
       subCategory,
@@ -48,8 +45,7 @@ const getAdsPost = async (req, res, next) => {
       };
     }
 
-    const sortOption = SORT_MAP[sortBy] || { createdAt: -1 }; // default to newest if sortBy is not provided
-    const data = await Post.aggregate([
+    const [data] = await Post.aggregate([
       {
         $match: {
           ...searchCriteria,
@@ -63,68 +59,14 @@ const getAdsPost = async (req, res, next) => {
         },
       },
       {
-        $lookup: {
-          from: "categories",
-          localField: "category",
-          foreignField: "uuid",
-          as: "category",
-        },
-      },
-      {
-        $unwind: {
-          path: "$category",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $sort: sortOption,
-      },
-      {
-        $facet: {
-          data: [
-            {
-              $skip: parseInt(start || 0),
-            },
-            {
-              $limit: parseInt(limit || 10),
-            },
-          ],
-          count: [
-            {
-              $count: "count",
-            },
-          ],
-          maxPrice: [
-            {
-              $group: {
-                _id: null,
-                value: { $max: "$price" },
-              },
-            },
-          ],
-        },
-      },
-    ]);
-    const result = await Post.aggregate([
-      {
-        $group: {
-          _id: null,
-          maxPrice: { $max: "$price" },
-        },
+        $count: "count",
       },
     ]);
 
-    const maxPrice = result[0]?.maxPrice || 0;
-
-    res.json({
-      message: "Fetched successfully",
-      data: data?.[0].data,
-      count: data?.[0]?.count?.[0]?.count,
-      maxPrice: maxPrice,
-    });
+    res.json(data?.count);
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = getAdsPost;
+module.exports = getPostCount;
