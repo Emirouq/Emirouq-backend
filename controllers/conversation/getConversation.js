@@ -16,6 +16,9 @@ const getConversation = async (req, res, next) => {
           visibleTo: {
             $in: [userId],
           },
+          isDeleted: {
+            $ne: true,
+          },
         },
       },
       {

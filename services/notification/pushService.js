@@ -21,6 +21,8 @@ class PushNotificationService {
       adTitle: payload.adTitle,
       amount: payload.amount,
       data: payload.data,
+      contextType: payload.contextType,
+      contextId: payload.contextId,
     });
 
     if (!template?.title || !template?.body) {
@@ -53,7 +55,12 @@ class PushNotificationService {
           message: {
             title: template.title,
             body: template.body,
-            data: template.data,
+            data: {
+              ...template.data,
+              eventType,
+              contextType: payload.contextType,
+              contextId: payload.contextId,
+            },
           },
         })
       )

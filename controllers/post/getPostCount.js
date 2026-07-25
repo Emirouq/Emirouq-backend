@@ -1,6 +1,5 @@
 const Post = require("../../models/Post.model");
-const { SORT_MAP } = require("../../utils/numberUtils");
-const { searchBy } = require("../../utils/socket/searchBy");
+const { mileageValueStage, searchBy } = require("../../utils/socket/searchBy");
 
 const getPostCount = async (req, res, next) => {
   try {
@@ -8,6 +7,7 @@ const getPostCount = async (req, res, next) => {
       status,
       userId,
       priceRange,
+      mileageRange,
       category,
       subCategory,
       keyword,
@@ -20,6 +20,7 @@ const getPostCount = async (req, res, next) => {
       status,
       userId,
       priceRange,
+      mileageRange,
       category,
       subCategory,
       keyword,
@@ -46,6 +47,7 @@ const getPostCount = async (req, res, next) => {
     }
 
     const [data] = await Post.aggregate([
+      mileageValueStage,
       {
         $match: {
           ...searchCriteria,

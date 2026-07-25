@@ -6,6 +6,7 @@ const searchBy = ({
   keyword,
   userId,
   priceRange,
+  mileageRange,
   category,
   subCategory,
   city,
@@ -41,7 +42,6 @@ const searchBy = ({
   }
   if (priceRange) {
     const result = priceRange;
-    console.log(!!+result[0] === true, result[0], result[1]);
     if (!!+result[0] === true) {
       searchCriteria = {
         ...searchCriteria,
@@ -56,6 +56,27 @@ const searchBy = ({
         ...searchCriteria,
         price: {
           ...searchCriteria.price,
+          $lte: parseFloat(result[1]),
+        },
+      };
+    }
+  }
+  if (mileageRange) {
+    const result = mileageRange;
+    if (!!+result[0] === true) {
+      searchCriteria = {
+        ...searchCriteria,
+        mileageValue: {
+          ...searchCriteria.mileageValue,
+          $gte: parseFloat(result[0]),
+        },
+      };
+    }
+    if (!!+result[1] === true) {
+      searchCriteria = {
+        ...searchCriteria,
+        mileageValue: {
+          ...searchCriteria.mileageValue,
           $lte: parseFloat(result[1]),
         },
       };
@@ -84,4 +105,32 @@ const searchBy = ({
 
   return searchCriteria;
 };
-module.exports = { searchBy };
+const mileageValueStage = {
+  $addFields: {
+    mileageValue: {
+      $convert: {
+        input: {
+          $let: {
+            vars: {
+              mileageProperty: {
+                $first: {
+                  $filter: {
+                    input: { $ifNull: ["$properties", []] },
+                    as: "property",
+                    cond: { $eq: ["$$property.attributeKey", "mileage"] },
+                  },
+                },
+              },
+            },
+            in: "$$mileageProperty.selectedValue.value",
+          },
+        },
+        to: "double",
+        onError: null,
+        onNull: null,
+      },
+    },
+  },
+};
+
+module.exports = { searchBy, mileageValueStage };

@@ -1,6 +1,6 @@
 const Post = require("../../models/Post.model");
 const { SORT_MAP } = require("../../utils/numberUtils");
-const { searchBy } = require("../../utils/socket/searchBy");
+const { mileageValueStage, searchBy } = require("../../utils/socket/searchBy");
 
 const getAdsPost = async (req, res, next) => {
   try {
@@ -11,6 +11,7 @@ const getAdsPost = async (req, res, next) => {
       userId,
       sortBy,
       priceRange,
+      mileageRange,
       category,
       subCategory,
       keyword,
@@ -23,6 +24,7 @@ const getAdsPost = async (req, res, next) => {
       status,
       userId,
       priceRange,
+      mileageRange,
       category,
       subCategory,
       keyword,
@@ -50,6 +52,7 @@ const getAdsPost = async (req, res, next) => {
 
     const sortOption = SORT_MAP[sortBy] || { createdAt: -1 }; // default to newest if sortBy is not provided
     const data = await Post.aggregate([
+      mileageValueStage,
       {
         $match: {
           ...searchCriteria,
@@ -102,25 +105,24 @@ const getAdsPost = async (req, res, next) => {
               },
             },
           ],
+          maxMileage: [
+            {
+              $group: {
+                _id: null,
+                value: { $max: "$mileageValue" },
+              },
+            },
+          ],
         },
       },
     ]);
-    const result = await Post.aggregate([
-      {
-        $group: {
-          _id: null,
-          maxPrice: { $max: "$price" },
-        },
-      },
-    ]);
-
-    const maxPrice = result[0]?.maxPrice || 0;
 
     res.json({
       message: "Fetched successfully",
-      data: data?.[0].data,
+      data: data?.[0]?.data || [],
       count: data?.[0]?.count?.[0]?.count,
-      maxPrice: maxPrice,
+      maxPrice: data?.[0]?.maxPrice?.[0]?.value || 0,
+      maxMileage: data?.[0]?.maxMileage?.[0]?.value || 0,
     });
   } catch (error) {
     next(error);

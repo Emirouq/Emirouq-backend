@@ -360,6 +360,61 @@ const socketEvents = (io) => {
       if (message) await ChatModel.create(messageData);
     });
 
+    socket.on("delete_message", async (payload, ack) => {
+      try {
+        const { conversationId, messageId } = payload || {};
+        const user = await getUser(socket.id);
+        const userId = user?.userId;
+
+        if (!conversationId || !messageId || !userId) {
+          ack && ack({ success: false, message: "Invalid delete message request" });
+          return;
+        }
+
+        const chat = await ChatModel.findOne({
+          uuid: messageId,
+          conversationId,
+          user: userId,
+        });
+
+        if (!chat) {
+          ack && ack({ success: false, message: "Message not found" });
+          return;
+        }
+
+        await ChatModel.deleteOne({
+          uuid: messageId,
+          conversationId,
+          user: userId,
+        });
+
+        const payloadToEmit = await refreshConversationAfterDelete({ conversationId, io });
+
+        io.to(conversationId).emit("message_deleted", {
+          conversationId,
+          messageId,
+        });
+
+        ack &&
+          ack({
+            success: true,
+            message: "Message deleted successfully",
+            data: {
+              conversationId,
+              messageId,
+              ...(payloadToEmit || {}),
+            },
+          });
+      } catch (error) {
+        console.error("Delete message failed:", error);
+        ack &&
+          ack({
+            success: false,
+            message: error?.message || "Unable to delete message",
+          });
+      }
+    });
+
     // seen message
     socket.on("seen_message", async (payload) => {
       const { conversationId, userId, receiverId } = payload;
@@ -485,6 +540,63 @@ function buildMessage({
     audio,
   };
 }
+
+const buildMessagePreview = (chat) => {
+  if (!chat) {
+    return {
+      lastMessage: "",
+      lastMessageTime: null,
+    };
+  }
+
+  const attachmentCount = chat?.attachments?.length || 0;
+  const lastMessage = chat?.message
+    ? chat.message
+    : attachmentCount
+      ? `${attachmentCount} new attachment${attachmentCount > 1 ? "s" : ""}`
+      : chat?.audio?.uri
+        ? "New audio message"
+        : "";
+
+  return {
+    lastMessage,
+    lastMessageTime: dayjs(chat.createdAt).unix(),
+  };
+};
+
+const refreshConversationAfterDelete = async ({ conversationId, io }) => {
+  if (!conversationId) {
+    return null;
+  }
+
+  const conversation = await Conversation.findOne({ uuid: conversationId });
+  const latestChat = await ChatModel.findOne({ conversationId }).sort({ createdAt: -1 });
+  const preview = buildMessagePreview(latestChat);
+  const payload = {
+    conversationId,
+    lastMessage: preview.lastMessage,
+    lastMessageTime: preview.lastMessageTime,
+    firstConversation: false,
+    sortConversation: true,
+  };
+
+  await Conversation.findOneAndUpdate(
+    { uuid: conversationId },
+    {
+      $set: {
+        lastMessage: preview.lastMessage,
+        lastMessageTime: preview.lastMessageTime,
+      },
+    },
+    { new: true },
+  );
+
+  (conversation?.users || []).forEach((userId) => {
+    io.to(userId).emit("update_conversation_cache", payload);
+  });
+
+  return payload;
+};
 
 //user Functions
 const activateUser = async (socketId, userId) => {
