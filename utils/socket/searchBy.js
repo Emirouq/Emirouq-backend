@@ -89,18 +89,32 @@ const searchBy = ({
     searchCriteria.subCategory = subCategory;
   }
   if (city) {
-    searchCriteria = {
-      ...searchCriteria,
-      $or: [
-        { "location.city": city },
-        {
-          "location.name": {
-            $regex: `${city}.*`,
-            $options: "i",
-          },
+    const cityOr = [
+      { "location.city": city },
+      {
+        "location.name": {
+          $regex: `${city}.*`,
+          $options: "i",
         },
-      ],
-    };
+      },
+    ];
+    if (searchCriteria.$or) {
+      // don't clobber an existing $or (e.g. keyword search) — AND the two conditions
+      searchCriteria = {
+        ...searchCriteria,
+        $and: [
+          ...(searchCriteria.$and || []),
+          { $or: searchCriteria.$or },
+          { $or: cityOr },
+        ],
+      };
+      delete searchCriteria.$or;
+    } else {
+      searchCriteria = {
+        ...searchCriteria,
+        $or: cityOr,
+      };
+    }
   }
 
   return searchCriteria;

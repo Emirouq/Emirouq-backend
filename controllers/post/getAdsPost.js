@@ -45,9 +45,15 @@ const getAdsPost = async (req, res, next) => {
         ? properties
         : properties.split(",");
 
-      propertyFilter["properties.selectedValue.value"] = {
-        $in: propertyValues.map((v) => new RegExp(`^${v.trim()}`, "i")),
-      };
+      // every selected value must match some property on the post (AND across
+      // filters), instead of matching if any property matches any value (OR)
+      propertyFilter["$and"] = propertyValues.map((v) => ({
+        properties: {
+          $elemMatch: {
+            "selectedValue.value": new RegExp(`^${v.trim()}`, "i"),
+          },
+        },
+      }));
     }
 
     const sortOption = SORT_MAP[sortBy] || { createdAt: -1 }; // default to newest if sortBy is not provided
@@ -58,11 +64,7 @@ const getAdsPost = async (req, res, next) => {
           ...searchCriteria,
           ...search,
           ...propertyFilter,
-          $or: [
-            {
-              isExpired: false,
-            },
-          ],
+          isExpired: false,
         },
       },
       {
