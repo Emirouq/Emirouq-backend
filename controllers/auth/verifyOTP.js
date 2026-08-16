@@ -61,6 +61,7 @@ const verifyOTP = async (req, res, next) => {
       await UserModel.create({
         uuid: uuid(),
         ...prospectUser._doc,
+        isActive: true,
       });
     }
 

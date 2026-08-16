@@ -115,7 +115,6 @@ const Register = async (req, res, next) => {
         if (password[0] !== confirmPassword[0]) {
           throw new httpErrors.BadRequest("Passwords do not match!");
         }
-        console.log("password", password);
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password[0], salt);
 
@@ -157,12 +156,20 @@ const Register = async (req, res, next) => {
           ...(profileImage && { profileImage }),
           userInterest: userInterest || [],
         });
+        console.log("otp", otp);
         if (email) {
-          await sendEmail(
-            [email],
-            `Welcome to Emirouq`,
-            registerTemplate({ name: `${firstName} ${lastName || ""}`, otp }),
-          );
+          try {
+            await sendEmail(
+              [email],
+              `Welcome to Emirouq`,
+              registerTemplate({ name: `${firstName} ${lastName || ""}`, otp }),
+            );
+          } catch (emailError) {
+            console.error("Failed to send registration email:", emailError);
+            throw httpErrors.InternalServerError(
+              "Failed to send verification email. Please try again later.",
+            );
+          }
         }
         await newUser.save();
 
@@ -173,7 +180,7 @@ const Register = async (req, res, next) => {
           token,
         });
       } catch (error) {
-        return next(err);
+        return next(error);
       }
     });
   } catch (error) {

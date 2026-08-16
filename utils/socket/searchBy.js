@@ -7,6 +7,7 @@ const searchBy = ({
   userId,
   priceRange,
   mileageRange,
+  yearRange,
   category,
   subCategory,
   city,
@@ -82,6 +83,27 @@ const searchBy = ({
       };
     }
   }
+  if (yearRange) {
+    const result = yearRange;
+    if (!!+result[0] === true) {
+      searchCriteria = {
+        ...searchCriteria,
+        yearValue: {
+          ...searchCriteria.yearValue,
+          $gte: parseFloat(result[0]),
+        },
+      };
+    }
+    if (!!+result[1] === true) {
+      searchCriteria = {
+        ...searchCriteria,
+        yearValue: {
+          ...searchCriteria.yearValue,
+          $lte: parseFloat(result[1]),
+        },
+      };
+    }
+  }
   if (category) {
     searchCriteria.category = category;
   }
@@ -89,15 +111,21 @@ const searchBy = ({
     searchCriteria.subCategory = subCategory;
   }
   if (city) {
-    const cityOr = [
-      { "location.city": city },
+    const cities = Array.isArray(city)
+      ? city
+      : String(city)
+          .split(",")
+          .map((c) => c.trim())
+          .filter(Boolean);
+    const cityOr = cities.flatMap((c) => [
+      { "location.city": c },
       {
         "location.name": {
-          $regex: `${city}.*`,
+          $regex: `${c}.*`,
           $options: "i",
         },
       },
-    ];
+    ]);
     if (searchCriteria.$or) {
       // don't clobber an existing $or (e.g. keyword search) — AND the two conditions
       searchCriteria = {
@@ -147,4 +175,32 @@ const mileageValueStage = {
   },
 };
 
-module.exports = { searchBy, mileageValueStage };
+const yearValueStage = {
+  $addFields: {
+    yearValue: {
+      $convert: {
+        input: {
+          $let: {
+            vars: {
+              yearProperty: {
+                $first: {
+                  $filter: {
+                    input: { $ifNull: ["$properties", []] },
+                    as: "property",
+                    cond: { $eq: ["$$property.attributeKey", "year"] },
+                  },
+                },
+              },
+            },
+            in: "$$yearProperty.selectedValue.value",
+          },
+        },
+        to: "double",
+        onError: null,
+        onNull: null,
+      },
+    },
+  },
+};
+
+module.exports = { searchBy, mileageValueStage, yearValueStage };

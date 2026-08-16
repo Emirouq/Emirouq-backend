@@ -1,5 +1,9 @@
 const Post = require("../../models/Post.model");
-const { mileageValueStage, searchBy } = require("../../utils/socket/searchBy");
+const {
+  mileageValueStage,
+  yearValueStage,
+  searchBy,
+} = require("../../utils/socket/searchBy");
 
 const getPostCount = async (req, res, next) => {
   try {
@@ -8,6 +12,7 @@ const getPostCount = async (req, res, next) => {
       userId,
       priceRange,
       mileageRange,
+      yearRange,
       category,
       subCategory,
       keyword,
@@ -21,6 +26,7 @@ const getPostCount = async (req, res, next) => {
       userId,
       priceRange,
       mileageRange,
+      yearRange,
       category,
       subCategory,
       keyword,
@@ -34,7 +40,7 @@ const getPostCount = async (req, res, next) => {
       };
     }
     // 🧩 handle multiple property filters
-    let propertyFilter = {};
+    let propertyAnd = [];
     if (properties) {
       // normalize into array
       const propertyValues = Array.isArray(properties)
@@ -43,7 +49,7 @@ const getPostCount = async (req, res, next) => {
 
       // every selected value must match some property on the post (AND across
       // filters), instead of matching if any property matches any value (OR)
-      propertyFilter["$and"] = propertyValues.map((v) => ({
+      propertyAnd = propertyValues.map((v) => ({
         properties: {
           $elemMatch: {
             "selectedValue.value": new RegExp(`^${v.trim()}`, "i"),
@@ -52,15 +58,18 @@ const getPostCount = async (req, res, next) => {
       }));
     }
 
+    const matchStage = { ...searchCriteria, ...search, isExpired: false };
+    if (propertyAnd.length) {
+      // merge with any existing $and (e.g. keyword+city combo from searchBy)
+      // instead of overwriting it
+      matchStage.$and = [...(matchStage.$and || []), ...propertyAnd];
+    }
+
     const [data] = await Post.aggregate([
       mileageValueStage,
+      yearValueStage,
       {
-        $match: {
-          ...searchCriteria,
-          ...search,
-          ...propertyFilter,
-          isExpired: false,
-        },
+        $match: matchStage,
       },
       {
         $count: "count",

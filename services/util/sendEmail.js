@@ -2,12 +2,11 @@ const AWS = require("aws-sdk");
 const fs = require("fs");
 const path = require("path");
 const nodemailer = require("nodemailer");
-const axios = require("axios");
 const { SendMailClient } = require("zeptomail");
 
 const { accessKeyId, secretAccessKey, region, sesSenderAddress } =
   require("../../config/keys").aws;
-const zeptoSecret = require("../../config/keys").zeptoSecret;
+// const zeptoSecret = require("../../config/keys").zeptoSecret;
 
 const SES_CONFIG = {
   accessKeyId: accessKeyId,
@@ -63,7 +62,6 @@ const sendAttachmentEmail = async (
       },
     ],
   });
-  console.log("Message sent: %s", info.messageId);
   return info;
 };
 
@@ -126,9 +124,7 @@ const sendEmail = (recipients, subject, template) => {
   return new Promise((resolve, reject) => {
     try {
       const url = "api.zeptomail.com/";
-      const token =
-        "Zoho-enczapikey wSsVR610qBelX6ormjWvI7xqy11XD1LxQU4o3VL07HH0T63A/MdqkhHMUFKjG/VOEGFuEGca978szkpShzVfi9x+n1sCDCiF9mqRe1U4J3x17qnvhDzMWmRYlRSJL4wAwQ5jnWBkFM4h+g==";
-
+      const token =process.env.ZEPTO_SECRET
       let client = new SendMailClient({ url, token });
 
       client
@@ -142,7 +138,10 @@ const sendEmail = (recipients, subject, template) => {
           htmlbody: template,
         })
         .then((resp) => resolve(resp))
-        .catch((error) => reject(error));
+        .catch((error) => {
+          console.error("ZeptoMail send failed:", JSON.stringify(error));
+          reject(error);
+        });
     } catch (error) {
       console.error("Error sending email:", error);
       return reject(error);

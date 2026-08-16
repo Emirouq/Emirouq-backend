@@ -13,17 +13,13 @@ const checkSubscriptionForSpecificCategory = async (req, res, next) => {
       "subscriptionPlan.categoryId": categoryId,
     });
 
-    //if the user is not subscribed to the category, we will fetch the list of subscription plans for that category
-    //heres the list of subscription plans for the category
-    let subscriptionPlan = [];
-    if (!!isCategorySubscribed?.uuid === false) {
-      subscriptionPlan = await SubscriptionPlan.find({
-        categoryId,
-      });
-      if (!subscriptionPlan) {
-        throw new Error("No subscription plan found for this category");
-      }
-    }
+    // Always fetch the list of purchasable plans for this category — needed both
+    // when the user has no subscription yet, and when an existing subscription has
+    // hit its ad limit and the user needs to buy/renew a plan to keep posting.
+    const subscriptionPlan = await SubscriptionPlan.find({
+      categoryId,
+      isActive: true,
+    });
 
     res.json({
       message: "User is not subscribed to this category",
