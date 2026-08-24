@@ -28,3 +28,6 @@ read.js
 *.csv
 upload-csv-service.js
 .env
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
