@@ -6,6 +6,9 @@ const {
   notifyFavoriteItemUpdated,
   notifyFavoritePriceDrop,
 } = require("../../services/notification/favoriteNotifications");
+const {
+  assertCanPublishInCategory,
+} = require("../../helpers/subscriptionAccess");
 
 const uploadFilesToAws = async (files, folderName) => {
   const uploadedFiles = [];
@@ -65,10 +68,29 @@ const updatePost = async (req, res, next) => {
         location = JSON.parse(once); // { name: "...", placeId: "...", ... }
       }
 
+      let subscription = null;
+      let endDate;
+
       if (!draftMode) {
         if (!title) throw httpErrors.BadRequest("Title is required");
         if (!description)
           throw httpErrors.BadRequest("Description is required");
+
+        // This route had no subscription check at all, so "save as draft" and
+        // then publish was a complete bypass of the paywall. A post that is
+        // already live and paid for keeps its own subscription; anything that
+        // is becoming live now has to be entitled.
+        const isAlreadyLive =
+          existingPost.status === "active" &&
+          !existingPost.isExpired &&
+          Boolean(existingPost.subscriptionId);
+
+        if (!isAlreadyLive) {
+          ({ subscription, endDate } = await assertCanPublishInCategory(
+            userId,
+            existingPost.category,
+          ));
+        }
       }
 
       let parsedProperties = [];
@@ -106,7 +128,6 @@ const updatePost = async (req, res, next) => {
         const imageFiles = Array.isArray(files.image)
           ? files.image
           : [files.image];
-        console.log("imageFiles", imageFiles);
         const uploaded = await Promise.all(
           imageFiles.map((file) =>
             uploadFilesToAws([file], `posts/${userId}`).then((res) => res[0]),
@@ -139,7 +160,18 @@ const updatePost = async (req, res, next) => {
           : existingPost.properties;
       // existingPost.file = uploadedFiles;
       existingPost.isDraft = draftMode;
-      existingPost.status = "pending";
+      existingPost.status = draftMode ? "draft" : "pending";
+
+      if (subscription?.subscriptionId) {
+        // Stamp the same fields addPost does, otherwise a published draft had
+        // no subscriptionId, counted as a free ad and never expired.
+        existingPost.subscriptionId = subscription.subscriptionId;
+        existingPost.adType = "paid";
+        existingPost.isExpired = false;
+        if (endDate) {
+          existingPost.expirationDate = endDate;
+        }
+      }
 
       await existingPost.save();
       await notifyFavoritePriceDrop(existingPost, oldPrice);

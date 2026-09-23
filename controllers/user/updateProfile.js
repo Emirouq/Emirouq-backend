@@ -103,6 +103,11 @@ const httpErrors = require("http-errors");
 const { v4: uuid } = require("uuid");
 const uploadBase64File = require("../../services/util/upload-base64-file");
 const UserModel = require("../../models/User.model");
+const {
+  normalizePhone,
+  isValidPhone,
+  emailMatch,
+} = require("../../helpers/authIdentity");
 
 const updateProfile = async (req, res, next) => {
   try {
@@ -116,16 +121,29 @@ const updateProfile = async (req, res, next) => {
       userInterest,
       profileImage,
     } = req.body;
-    console.log("req.body", req.body);
     const { uuid: userId } = req.user;
 
     const sanitizedEmail = email?.trim().toLowerCase();
     const sanitizedUserHandle = userHandle?.trim().toLowerCase();
+    // Store the same shape auth does, so the number still matches at login.
+    const sanitizedPhone = normalizePhone(phoneNumber);
 
     if (sanitizedEmail) {
-      const userData = await UserModel.findOne({ email: sanitizedEmail });
+      const userData = await UserModel.findOne({ email: emailMatch(sanitizedEmail) });
       if (userData && userData.uuid !== userId) {
         throw new httpErrors.Conflict("Email already exists");
+      }
+    }
+
+    if (sanitizedPhone) {
+      if (!isValidPhone(sanitizedPhone)) {
+        throw httpErrors.BadRequest("Please enter a valid phone number.");
+      }
+      // phoneNumber is a unique index now; without this the driver throws
+      // E11000 and the client sees a 500 instead of a usable message.
+      const phoneOwner = await UserModel.findOne({ phoneNumber: sanitizedPhone });
+      if (phoneOwner && phoneOwner.uuid !== userId) {
+        throw new httpErrors.Conflict("Phone number already exists");
       }
     }
 
@@ -159,13 +177,12 @@ const updateProfile = async (req, res, next) => {
     if (profileImage) {
       uploadedImageUrl = await uploadBase64File(profileImage, "profile");
     }
-    console.log("uploadedImageUrl", uploadedImageUrl);
     const updatedUser = await UserModel.findOneAndUpdate(
       { uuid: userId },
       {
         ...(firstName && { firstName }),
         ...(lastName && { lastName }),
-        ...(phoneNumber && { phoneNumber }),
+        ...(sanitizedPhone && { phoneNumber: sanitizedPhone }),
         ...(sanitizedEmail && { email: sanitizedEmail }),
         ...(sanitizedUserHandle && { userHandle: sanitizedUserHandle }),
         ...(uploadedImageUrl && { profileImage: uploadedImageUrl?.Location }),

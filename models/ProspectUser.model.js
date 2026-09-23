@@ -12,8 +12,11 @@ const ProspectUserSchema = new Schema(
       default: false,
     },
     phoneNumber: {
-      type: Number,
-      // required: true,
+      // String, not Number: a Number drops a leading "+" or "0" and cannot
+      // hold an E.164 value at all. Run scripts/migrate-phone-to-string.js once
+      // to convert documents written by the previous schema.
+      type: String,
+      trim: true,
     },
     firstName: {
       type: String,

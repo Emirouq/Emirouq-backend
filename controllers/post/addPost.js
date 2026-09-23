@@ -3,8 +3,9 @@ const Post = require("../../models/Post.model");
 const formidable = require("formidable");
 const { v4: uuid } = require("uuid");
 const { upload } = require("../../services/util/upload-files");
-const { accessChecker } = require("../../middlewares/access_checker");
-const UserSubscription = require("../../models/UserSubscription.model");
+const {
+  assertCanPublishInCategory,
+} = require("../../helpers/subscriptionAccess");
 const {
   notifySavedSearchMatches,
 } = require("../../services/notification/favoriteNotifications");
@@ -55,13 +56,8 @@ const addPost = async (req, res, next) => {
 
     const draftMode = isDraft?.[0];
 
-    //to check for the access of the user to create a post.
-    const subscription = await UserSubscription.findOne({
-      user: userId,
-      status: "active",
-      "subscriptionPlan.categoryId": category?.[0],
-    });
     let endDate;
+    let subscription = null;
     if (!draftMode) {
       if (!title) throw httpErrors.BadRequest("Title is required");
       if (!description) throw httpErrors.BadRequest("Description is required");
@@ -69,11 +65,11 @@ const addPost = async (req, res, next) => {
         throw httpErrors.BadRequest("Subcategory Id is required");
       if (!category) throw httpErrors.BadRequest("Category Id is required");
 
-      try {
-        ({ endDate } = await accessChecker(userId, subscription));
-      } catch (error) {
-        throw httpErrors.Forbidden(error?.message);
-      }
+      // Throws 403 when there is no active, in-term plan for this category.
+      ({ subscription, endDate } = await assertCanPublishInCategory(
+        userId,
+        category?.[0],
+      ));
     }
 
     let parsedProperties = [];
@@ -107,11 +103,6 @@ const addPost = async (req, res, next) => {
         files?.image?.map((file) => uploadFilesToAws(file, `posts/${userId}`)),
       );
     }
-    const categorySubscription = await UserSubscription.findOne({
-      user: userId,
-      status: "active",
-      "subscriptionPlan.categoryId": category?.[0],
-    });
     const newPost = new Post({
       uuid: uuid(),
       status: !!draftMode === true ? "draft" : "pending",
@@ -137,15 +128,14 @@ const addPost = async (req, res, next) => {
       ...(condition && { condition: condition[0] }),
       file: uploadedFiles,
       expirationDate: !draftMode ? endDate : null,
-      adType: subscription?.uuid ? "paid" : "free",
-      ...(categorySubscription && {
-        subscriptionId: categorySubscription?.subscriptionId,
+      adType: subscription?.subscriptionId ? "paid" : "free",
+      ...(subscription?.subscriptionId && {
+        subscriptionId: subscription.subscriptionId,
       }),
     });
 
     await newPost.save();
     await notifySavedSearchMatches(newPost);
-    console.log(newPost, "newPost");
 
     res.status(201).json({
       message: draftMode ? "Post saved as draft" : "Post added successfully",

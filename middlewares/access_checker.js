@@ -2,8 +2,23 @@ const dayjs = require("dayjs");
 const httpErrors = require("http-errors");
 const Post = require("../models/Post.model");
 
+/**
+ * Enforces the ad-count limit of the plan the user holds.
+ *
+ * It must be called WITH a subscription. Callers used to pass `undefined` when
+ * the user had no plan for the category, and the free-plan branch below then
+ * let the post through — an ad went live without a subscription. Publishing is
+ * gated by helpers/subscriptionAccess.js now; set ALLOW_FREE_POSTING=true only
+ * if a genuine free tier is reintroduced.
+ */
 const accessChecker = async (userId, subscription) => {
   try {
+    if (!subscription?.subscriptionId && process.env.ALLOW_FREE_POSTING !== "true") {
+      throw httpErrors.Forbidden(
+        "You need an active plan for this category before you can publish this ad.",
+      );
+    }
+
     // 1. Get subscription details (using userId)
 
     let planName = "free";

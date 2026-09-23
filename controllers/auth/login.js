@@ -6,6 +6,7 @@ const {
 const Token = require("../../models/Token.model");
 const User = require("../../models/User.model");
 const createHttpError = require("http-errors");
+const { resolveIdentity, identityFilter } = require("../../helpers/authIdentity");
 
 /**
  * Login for existing users (supports email and phone number)
@@ -14,56 +15,20 @@ const createHttpError = require("http-errors");
  */
 const login = async (req, res, next) => {
   try {
-    console.log(req.body);
-    let { email, phoneNumber, password } = req.body;
-    if (!email && !phoneNumber) {
-      throw createHttpError.BadRequest("Email or phone number is required.");
-    }
-    password = typeof password === "string" ? password.trim() : password?.[0]?.trim();
+    // Never log req.body here: it carries the plaintext password.
+    let { password } = req.body;
+    const { email, phoneNumber } = resolveIdentity(req.body);
+
+    password =
+      typeof password === "string" ? password.trim() : password?.[0]?.trim();
     if (!password) {
       throw createHttpError.BadRequest("Password is required.");
     }
 
-    if (email) email = email.trim().toLowerCase();
+    // Anchored exact match: `$regex: email` was unanchored, so "bob@x.com"
+    // also matched "rob@x.com" and could sign you in as the wrong account.
+    const userLogin = await User.findOne(identityFilter({ email, phoneNumber }));
 
-    // const userLogin = await User.findOne({
-    //   $or: [{ email }, { phoneNumber }],
-    // });
-    let userLogin = await User.findOne({
-      ...(phoneNumber && {
-        phoneNumber,
-      }),
-      ...(email && {
-        email: {
-          $regex: email,
-          $options: "i",
-        },
-        $or: [
-          {
-            oauthId: {
-              $exists: false,
-            },
-          },
-          {
-            oauthId: {
-              $eq: null,
-            },
-          },
-          {
-            oauthId: {
-              $eq: "",
-            },
-          },
-        ],
-      }),
-    });
-
-    if (!userLogin && phoneNumber) {
-      userLogin = await User.findOne({ phoneNumber });
-    }
-    if (!userLogin && email) {
-      userLogin = await User.findOne({ email });
-    }
     if (!userLogin) {
       throw createHttpError.BadRequest("Account not found. Please sign up.");
     }

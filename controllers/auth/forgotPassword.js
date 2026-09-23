@@ -1,68 +1,73 @@
 const UserModal = require("../../models/User.model");
 const ProspectUser = require("../../models/ProspectUser.model");
 const ResetPasswordModal = require("../../models/ResetPassword.model");
-const { sendEmail } = require("../../services/util/sendEmail");
-const crypto = require("crypto");
+const { sendEmail, generateOTP } = require("../../services/util/sendEmail");
 const createError = require("http-errors");
 const sendOTP = require("../../services/templates/sendOTP");
+const {
+  resolveIdentity,
+  identityFilter,
+  encodeOtpToken,
+  shouldExposeOtp,
+} = require("../../helpers/authIdentity");
 
+/**
+ * Sends a one time password, either to verify a new signup (isForgotPassword
+ * falsy -> ProspectUser) or to reset an existing password (-> User).
+ */
 const forgotPassword = async (req, res, next) => {
   try {
-    const { email, phoneNumber, isForgotPassword } = req.body;
+    const { isForgotPassword } = req.body;
+    const { email, phoneNumber, identifier } = resolveIdentity(req.body);
 
-    //if isForgotPassword is true  then User model else prospect Usr
-    const Model = isForgotPassword ? UserModal : ProspectUser;
-    if (!email && !phoneNumber) {
-      throw createError.BadRequest("Email or phone number is required");
+    // TODO: no SMS provider is wired up yet. Checked before anything is written
+    // so the caller gets a clear 501 instead of a silently undelivered code.
+    // Set AUTH_EXPOSE_OTP=true locally to work on the flow without SMS.
+    if (phoneNumber && !shouldExposeOtp()) {
+      throw createError.NotImplemented(
+        "SMS delivery is not available yet. Please use your email address.",
+      );
     }
-    let user = await Model.findOne({
-      $or: [
-        {
-          email: {
-            $regex: email,
-            $options: "i",
-          },
-        },
-      ],
-    });
 
-    console.log("user", user);
+    // isForgotPassword => the account already exists; otherwise it is still a prospect
+    const Model = isForgotPassword ? UserModal : ProspectUser;
+
+    // The previous query only ever looked at `email`, with `$regex: undefined`
+    // when a phone number was supplied, so the phone flow could never work.
+    const user = await Model.findOne(identityFilter({ email, phoneNumber }));
+
     if (!user) {
       throw createError.BadRequest("User not found");
     }
 
-    const identifier = email || phoneNumber;
+    await ResetPasswordModal.deleteMany(
+      email ? { email } : { phoneNumber },
+    );
 
-    await ResetPasswordModal.deleteMany({
-      $or: [{ email }, { phoneNumber }],
-    });
+    const otp = generateOTP();
+    const token = encodeOtpToken(identifier, otp);
 
-    const otp = crypto.randomInt(1000, 9999);
-
-    const token = Buffer.from(`${identifier}:${otp}`).toString("base64");
-
-    const resetOtp = new ResetPasswordModal({
+    await new ResetPasswordModal({
       otp,
-      email: email?.toLowerCase(),
-      phoneNumber,
+      ...(email && { email }),
+      ...(phoneNumber && { phoneNumber }),
       isVerified: false,
-    });
-    await resetOtp.save();
+    }).save();
 
     if (email) {
       await sendEmail(
         [email],
         `ONE TIME PASSWORD (OTP)`,
-        sendOTP({ name: user?.firstName, otp })
+        sendOTP({ name: user?.firstName, otp }),
       );
     }
-
-    console.log(`Send OTP ${otp} to phone ${phoneNumber}`);
 
     return res.status(200).send({
       message: "OTP sent successfully",
       token,
-      otp,
+      // Never returned in production: anyone could read it and take over an
+      // account without access to the mailbox or handset.
+      ...(shouldExposeOtp() && { otp }),
     });
   } catch (err) {
     next(err);

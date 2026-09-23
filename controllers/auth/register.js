@@ -8,6 +8,13 @@ const ResetPasswordModal = require("../../models/ResetPassword.model");
 const UserModel = require("../../models/User.model");
 const ProspectUser = require("../../models/ProspectUser.model");
 const registerTemplate = require("../../services/templates/register");
+const {
+  resolveIdentity,
+  identityFilter,
+  assertPasswordStrength,
+  encodeOtpToken,
+  shouldExposeOtp,
+} = require("../../helpers/authIdentity");
 
 const uploadFilesToAws = async (files, folderName) => {
   const location = files?.path || files?.filepath;
@@ -22,6 +29,15 @@ const uploadFilesToAws = async (files, folderName) => {
   };
 };
 
+/** formidable v3 gives every field as an array. */
+const first = (field) =>
+  Array.isArray(field) ? field[0] : field === undefined ? undefined : field;
+
+const trimmed = (field) => {
+  const value = first(field);
+  return typeof value === "string" ? value.trim() : value;
+};
+
 const Register = async (req, res, next) => {
   try {
     const form = new formidable.IncomingForm();
@@ -31,29 +47,36 @@ const Register = async (req, res, next) => {
           throw httpErrors.BadRequest("Error parsing form data");
         }
 
-        let {
-          firstName,
-          lastName,
-          email,
-          phoneNumber,
-          password,
-          confirmPassword,
-          bio,
-          userInterest,
-        } = fields;
-        console.log("fields", fields);
+        const firstName = trimmed(fields.firstName);
+        const lastName = trimmed(fields.lastName);
+        const bio = trimmed(fields.bio);
+        const password = first(fields.password);
+        const confirmPassword = first(fields.confirmPassword);
 
-        if ((!email && !phoneNumber) || !password || !confirmPassword) {
-          throw httpErrors.BadRequest(
-            "Either Email or Phone Number,and passwords are required!",
+        if (!firstName) {
+          throw httpErrors.BadRequest("First name is required.");
+        }
+
+        const { email, phoneNumber, identifier, isEmail } = resolveIdentity({
+          email: fields.email,
+          phoneNumber: fields.phoneNumber,
+        });
+
+        assertPasswordStrength(password, confirmPassword);
+
+        // TODO: wire up an SMS provider. Checked up front so a phone signup
+        // fails before any record is written. Set AUTH_EXPOSE_OTP=true locally
+        // to work on the flow without SMS.
+        if (phoneNumber && !shouldExposeOtp()) {
+          throw httpErrors.NotImplemented(
+            "SMS delivery is not available yet. Please sign up with an email address.",
           );
         }
 
-        if (email) email = email[0].trim().toLowerCase();
-        if (phoneNumber) phoneNumber = phoneNumber[0].trim();
+        let userInterest = first(fields.userInterest);
         if (userInterest) {
           try {
-            userInterest = JSON.parse(userInterest[0]);
+            userInterest = JSON.parse(userInterest);
             if (
               !Array.isArray(userInterest) ||
               userInterest.some((item) => typeof item !== "string")
@@ -67,96 +90,79 @@ const Register = async (req, res, next) => {
           }
         }
 
+        const filter = identityFilter({ email, phoneNumber });
+
+        // Anchored exact match. The previous `$regex: email` was an unanchored
+        // substring match, so an unrelated address containing this one counted
+        // as "already registered".
         if (email) {
-          const checkIfEmailExist = await UserModel.findOne({
-            email: {
-              $regex: email,
-              $options: "i",
-            },
+          const emailTaken = await UserModel.findOne({
+            ...filter,
             $or: [
-              {
-                oauthId: {
-                  $exists: false,
-                },
-              },
-              {
-                oauthId: {
-                  $eq: "",
-                },
-              },
+              { oauthId: { $exists: false } },
+              { oauthId: { $in: [null, ""] } },
             ],
           });
-          if (checkIfEmailExist) {
+          if (emailTaken) {
             throw new httpErrors.Conflict(
               "This email is already registered. Please try another one!",
             );
           }
-        }
-
-        if (phoneNumber) {
-          const checkIfPhoneExist = await UserModel.findOne({ phoneNumber });
-          if (checkIfPhoneExist) {
+        } else {
+          const phoneTaken = await UserModel.findOne(filter);
+          if (phoneTaken) {
             throw new httpErrors.Conflict(
               "This phone number is already registered.",
             );
           }
         }
-        // const checkIfEmailExistInOauth = await UserModel.findOne({
-        //   email,
-        //   oauthId: {
-        //     $exists: true,
-        //   },
-        // });
-        // if (checkIfEmailExistInOauth) {
-        //   throw new httpErrors.Conflict(
-        //     "This email is already registered with a social account. Please try another one!"
-        //   );
-        // }
-        if (password[0] !== confirmPassword[0]) {
-          throw new httpErrors.BadRequest("Passwords do not match!");
-        }
+
         const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password[0], salt);
+        const hashedPassword = await bcrypt.hash(password, salt);
 
-        const otp = generateOTP(4);
-        const identifier = email || phoneNumber;
-        const token = Buffer.from(`${identifier}:${otp}`).toString("base64");
+        const otp = generateOTP();
+        const token = encodeOtpToken(identifier, otp);
 
-        if (email || phoneNumber) {
-          await ResetPasswordModal.deleteMany({
-            $or: [{ email }, { phoneNumber }],
-          });
-        }
+        await ResetPasswordModal.deleteMany(
+          email ? { email } : { phoneNumber },
+        );
+        // A prospect from an abandoned attempt would otherwise stay behind and
+        // be picked up by verifyOTP with the old password.
+        await ProspectUser.deleteMany(filter);
 
-        const saveOtp = new ResetPasswordModal({
+        await new ResetPasswordModal({
           ...(email && { email }),
           ...(phoneNumber && { phoneNumber }),
           otp,
-        });
-        await saveOtp.save();
+        }).save();
 
         let profileImage = null;
         if (files?.profileImage) {
           const uploadedFile = await uploadFilesToAws(
-            files.profileImage[0],
+            first(files.profileImage),
             "users",
           );
           profileImage = uploadedFile.url;
         }
+
         const newUser = new ProspectUser({
           uuid: uuid(),
-          firstName: firstName?.[0],
-          ...(lastName && { lastName: lastName?.[0] }),
+          firstName,
+          ...(lastName && { lastName }),
           ...(email && { email }),
           ...(phoneNumber && { phoneNumber }),
           ...(bio && { bio }),
           password: hashedPassword,
           isActive: false,
-          isEmail: email ? true : false,
+          isEmail,
           ...(profileImage && { profileImage }),
           userInterest: userInterest || [],
         });
-        console.log("otp", otp);
+
+        // Saved before the email goes out, so a mail failure cannot leave an
+        // OTP with nothing to verify.
+        await newUser.save();
+
         if (email) {
           try {
             await sendEmail(
@@ -171,13 +177,13 @@ const Register = async (req, res, next) => {
             );
           }
         }
-        await newUser.save();
 
         res.status(201).json({
           message:
             "User registered successfully! Please verify your email or phone number.",
-          otp,
           token,
+          // Development only — see shouldExposeOtp().
+          ...(shouldExposeOtp() && { otp }),
         });
       } catch (error) {
         return next(error);

@@ -218,7 +218,10 @@ const subscriptionCancelled = async (data) => {
     },
     {
       $set: {
-        status: "cancelled",
+        // "canceled" (one l) is what the UserSubscription enum allows.
+        // findOneAndUpdate skips validators, so "cancelled" used to be written
+        // straight through and never matched a status comparison.
+        status: "canceled",
         endDate: subscription?.items?.data?.[0]?.current_period_end,
       },
     }

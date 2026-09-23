@@ -1,6 +1,7 @@
 const httpErrors = require("http-errors");
 const { v4: uuid } = require("uuid");
 const UserModel = require("../../models/User.model");
+const { normalizePhone } = require("../../helpers/authIdentity");
 const stripe = require("../../services/stripe/getStripe");
 const {
   generateAccessToken,
@@ -48,7 +49,9 @@ const oauthLogin = async (req, res, next) => {
       firstName,
       lastName,
       ...(email && { email }),
-      ...(phoneNumber && { phoneNumber }),
+      ...(normalizePhone(phoneNumber) && {
+        phoneNumber: normalizePhone(phoneNumber),
+      }),
       isActive: true,
       isEmail: true,
       profileImage,
