@@ -39,6 +39,9 @@ const updatePostStatus = async (req, res, next) => {
     if (!AD_STATUS_EVENT_MAP[status] && !notificationEvent) {
       throw httpErrors.BadRequest("Unsupported ad status notification event");
     }
+    if (status === "rejected" && !rejectedReason?.trim()) {
+      throw httpErrors.BadRequest("Rejection reason is required");
+    }
 
     if (status && PERSISTED_POST_STATUSES.has(status)) {
       post.status = status;
@@ -47,49 +50,66 @@ const updatePostStatus = async (req, res, next) => {
       await post.save();
     }
 
-    if (user.email && status === "rejected") {
-      await sendEmail(
-        [user.email],
-        `Ad Rejected`,
-        postRejection({
-          name: `${user?.firstName} ${user?.lastName || ""}`,
-          postTitle: post?.title,
-          postContentSnippet: post?.description,
-          rejectionReason: rejectedReason,
-          guidelinesLink: "https://emirouq.ae/",
-          postEditLink: "https://emirouq.ae/",
-          supportLink: "https://emirouq.ae/",
-        }),
+    // The status is already saved. Email and notifications are best-effort:
+    // a ZeptoMail or push failure used to bubble up as a 500, so the admin saw
+    // "Internal Server Error" for a rejection that had in fact gone through.
+    try {
+      if (user?.email && status === "rejected") {
+        await sendEmail(
+          [user.email],
+          `Ad Rejected`,
+          postRejection({
+            name: `${user?.firstName} ${user?.lastName || ""}`,
+            postTitle: post?.title,
+            postContentSnippet: post?.description,
+            rejectionReason: rejectedReason,
+            guidelinesLink: "https://emirouq.ae/",
+            postEditLink: "https://emirouq.ae/",
+            supportLink: "https://emirouq.ae/",
+          }),
+        );
+      }
+    } catch (emailError) {
+      console.error(
+        `updatePostStatus: post ${id} set to ${status}, but email failed:`,
+        emailError,
       );
     }
 
-    if (notificationEvent) {
-      await emitAdNotification(
-        post,
-        NotificationEventType[notificationEvent] || notificationEvent,
-        {
+    try {
+      if (notificationEvent) {
+        await emitAdNotification(
+          post,
+          NotificationEventType[notificationEvent] || notificationEvent,
+          {
+            initiatorId: req.user?.uuid || "system",
+            initiatorRole: req.user?.role === "Admin" ? "admin" : "customer",
+            data: { rejectedReason },
+          },
+        );
+      } else {
+        await emitAdStatusNotifications(post, status, {
           initiatorId: req.user?.uuid || "system",
           initiatorRole: req.user?.role === "Admin" ? "admin" : "customer",
           data: { rejectedReason },
-        },
-      );
-    } else {
-      await emitAdStatusNotifications(post, status, {
-        initiatorId: req.user?.uuid || "system",
-        initiatorRole: req.user?.role === "Admin" ? "admin" : "customer",
-        data: { rejectedReason },
-      });
-    }
+        });
+      }
 
-    if (["expired", "rejected", "paused", "removed"].includes(status)) {
-      await notifyFavoriteItemUnavailable(post, {
-        data: {
-          reason: status,
-        },
-      });
-    }
-    if (status === "active") {
-      await notifySavedSearchMatches(post);
+      if (["expired", "rejected", "paused", "removed"].includes(status)) {
+        await notifyFavoriteItemUnavailable(post, {
+          data: {
+            reason: status,
+          },
+        });
+      }
+      if (status === "active") {
+        await notifySavedSearchMatches(post);
+      }
+    } catch (sideEffectError) {
+      console.error(
+        `updatePostStatus: post ${id} set to ${status}, but notifications failed:`,
+        sideEffectError,
+      );
     }
 
     res.status(200).json({

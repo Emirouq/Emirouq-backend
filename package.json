@@ -4,8 +4,8 @@
   "description": "Emirouq description",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon index.js",
-    "dev": "bun i;  nodemon index.js",
+    "start": "node api.js && nodemon index.js",
+    "dev": "node api.js && bun i;  nodemon index.js",
     "lint": "eslint . --ext=js --fix;  exit 0"
   },
   "author": "",
