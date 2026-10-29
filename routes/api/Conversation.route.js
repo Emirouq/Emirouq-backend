@@ -7,10 +7,12 @@ const sendMessage = require("../../controllers/conversation/chat/sendMessage");
 const getMessageList = require("../../controllers/conversation/chat/getMessageList");
 const uploadFiles = require("../../controllers/conversation/chat/uploadFiles");
 const getPostConversation = require("../../controllers/conversation/getPostConversation");
+const getConversationById = require("../../controllers/conversation/getConversationById");
 
 // conversation apis
 router.get("/", getConversation);
 router.post("/", createConversation);
+router.get("/details/:conversationId", getConversationById);
 router.get("/:postId", getPostConversation);
 
 //chat apis

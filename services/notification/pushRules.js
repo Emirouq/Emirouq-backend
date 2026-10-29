@@ -19,6 +19,7 @@ const PUSH_ENABLED_EVENTS = new Set([
   PushNotificationEventType.AD_REJECTED,
   PushNotificationEventType.AD_REMOVED_BY_ADMIN,
   PushNotificationEventType.AD_EXPIRING_SOON,
+  PushNotificationEventType.REPORT_STATUS_UPDATED,
 ]);
 
 const pushNotificationRules = Object.keys(notificationRules).reduce((acc, eventType) => {
@@ -32,6 +33,18 @@ const pushNotificationRules = Object.keys(notificationRules).reduce((acc, eventT
   };
   return acc;
 }, {});
+
+// Chat push reads like a chat app: sender as the title, latest message as the
+// body, and the merged count when several messages are waiting.
+pushNotificationRules[PushNotificationEventType.MESSAGE_RECEIVED] = (ctx) => {
+  const count = Number(ctx.data?.groupCount) || 1;
+  const preview = ctx.data?.preview || "Sent you a message";
+  return {
+    title: ctx.actorName || "New Message",
+    body: count > 1 ? `${preview} (${count} new messages)` : preview,
+    data: ctx.data,
+  };
+};
 
 module.exports = {
   pushNotificationRules,

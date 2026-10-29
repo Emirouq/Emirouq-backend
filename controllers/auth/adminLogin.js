@@ -1,7 +1,5 @@
 const { comparePassword } = require("../../helpers/bcrypt");
-const { generateAccessToken } = require("../../services/util/generate_token");
-const { generateRefreshToken } = require("../../services/util/generate_token");
-const Token = require("../../models/Token.model");
+const { createChallengeToken } = require("../../helpers/adminTwoFactor");
 const AdminModel = require("../../models/Admin.model");
 const UserLoginMech = require("../../models/UserLoginMech.model");
 const createHttpError = require("http-errors");
@@ -33,12 +31,26 @@ const adminLogin = async (req, res, next) => {
         "Account not found. Please sign up."
       );
 
+    if (!userLogin.uuid) {
+      // Old, half-created admin record; it cannot have a session.
+      throw new createHttpError.BadRequest(
+        "This admin account is not set up correctly. Ask a Super Admin to invite you again."
+      );
+    }
+    if (userLogin.isActive === false) {
+      throw new createHttpError.Forbidden(
+        "Your admin access has been revoked. Contact a Super Admin."
+      );
+    }
+
     const loginMech = await UserLoginMech.findOne({
       user: userLogin.uuid,
     });
     if (!loginMech?.password) {
       throw new createHttpError.BadRequest(
-        "This admin account does not have a password set. Please contact support."
+        userLogin.inviteTokenHash
+          ? "Finish setting up your account with the link in your invitation email."
+          : "This admin account does not have a password set. Please contact support."
       );
     }
     // check if password is correct
@@ -49,30 +61,16 @@ const adminLogin = async (req, res, next) => {
     if (!isPasswordCorrect)
       throw new createHttpError.BadRequest("Incorrect email or password");
 
-    const payload = {
-      _id: userLogin?._id,
-      uuid: userLogin?.uuid,
-      firstName: userLogin?.firstName,
-      lastName: userLogin?.lastName,
-      email: userLogin?.email,
-      role: "Admin",
-    };
-
-    // generate access and refresh tokens
-    const accessToken = generateAccessToken(payload);
-    const refreshToken = generateRefreshToken(payload);
-
-    // save refresh token in db
-    await Token.create({
-      user: userLogin.uuid,
-      token: refreshToken,
-    });
-
+    // Password is right, but that alone no longer signs an admin in: every
+    // admin also confirms an authenticator-app code (or sets one up first).
     res.status(200).json({
-      loggedin: true,
-      message: "Login successful",
-      accessToken,
-      refreshToken,
+      loggedin: false,
+      twoFactorRequired: true,
+      setupRequired: !userLogin?.twoFactor?.enabled,
+      challengeToken: createChallengeToken(userLogin),
+      message: userLogin?.twoFactor?.enabled
+        ? "Enter the code from your authenticator app."
+        : "Set up two-factor authentication to continue.",
     });
   } catch (error) {
     next(error);

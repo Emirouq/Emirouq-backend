@@ -1,6 +1,11 @@
 const AttributeOption = require("../../models/AttributeOption.model");
 const Attribute = require("../../models/Attribute.model");
 const { v4: uuid } = require("uuid");
+const httpErrors = require("http-errors");
+const {
+  cleanValue,
+  sameValueRegex,
+} = require("../../helpers/masterDataDuplicates");
 const addAttributeOptions = async (req, res, next) => {
   try {
     const { attributeId } = req.params;
@@ -18,24 +23,39 @@ const addAttributeOptions = async (req, res, next) => {
     if (!findAttribute) {
       throw new Error("Not found");
     }
-    // if the main attribute is adding then create
-    if (!parentId) {
-      await AttributeOption.create({
-        uuid: uuid(),
-        value,
-        attributeId, // eg: brand uuid
-      });
+    const cleaned = cleanValue(value);
+    if (!cleaned) {
+      throw httpErrors.BadRequest("Value is required");
     }
-    if (parentId && parentValue) {
-      await AttributeOption.create({
-        uuid: uuid(),
-        value,
-        attributeId, // eg: model uuid
-        parentId,
-        parentValue,
-      });
+
+    // A child value (e.g. a Model) needs a real parent value (its Brand).
+    let parent = null;
+    if (parentId) {
+      parent = await AttributeOption.findOne({ uuid: parentId }).lean();
+      if (!parent) throw httpErrors.BadRequest("Parent value not found");
     }
-    // else add children
+
+    // Same value under the same parent counts as a duplicate, ignoring case
+    // and extra spaces ("Toyota" = "toyota ").
+    const duplicate = await AttributeOption.exists({
+      attributeId,
+      ...(parent ? { parentId: parent.uuid } : { parentId: { $in: [null, ""] } }),
+      value: sameValueRegex(cleaned),
+    });
+    if (duplicate) {
+      throw httpErrors.Conflict(
+        parent
+          ? `"${cleaned}" already exists under "${parent.value}"`
+          : `"${cleaned}" already exists`
+      );
+    }
+
+    await AttributeOption.create({
+      uuid: uuid(),
+      value: cleaned,
+      attributeId, // eg: brand or model uuid
+      ...(parent && { parentId: parent.uuid, parentValue: parent.value }),
+    });
 
     await res.status(200).json({
       message: "Added Successfully",

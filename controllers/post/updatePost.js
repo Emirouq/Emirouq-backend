@@ -7,7 +7,7 @@ const {
   notifyFavoritePriceDrop,
 } = require("../../services/notification/favoriteNotifications");
 const {
-  assertCanPublishInCategory,
+  resolvePublishEntitlement,
 } = require("../../helpers/subscriptionAccess");
 
 const uploadFilesToAws = async (files, folderName) => {
@@ -49,6 +49,14 @@ const updatePost = async (req, res, next) => {
       }
       const oldPrice = existingPost.price;
 
+      // Hidden because its category was disabled: editing would put it back
+      // in review ("pending") and around the hold.
+      if (existingPost.categoryHold?.heldAt) {
+        throw httpErrors.Forbidden(
+          "This ad is hidden while its category is unavailable. You can edit it once the category is back."
+        );
+      }
+
       let {
         title,
         description,
@@ -70,6 +78,8 @@ const updatePost = async (req, res, next) => {
 
       let subscription = null;
       let endDate;
+      let isFreePost = false;
+      let freeSource;
 
       if (!draftMode) {
         if (!title) throw httpErrors.BadRequest("Title is required");
@@ -80,16 +90,27 @@ const updatePost = async (req, res, next) => {
         // then publish was a complete bypass of the paywall. A post that is
         // already live and paid for keeps its own subscription; anything that
         // is becoming live now has to be entitled.
+        // A live free ad keeps its free slot and its original expiry too.
         const isAlreadyLive =
           existingPost.status === "active" &&
           !existingPost.isExpired &&
-          Boolean(existingPost.subscriptionId);
+          (Boolean(existingPost.subscriptionId) || existingPost.isFreePost);
 
         if (!isAlreadyLive) {
-          ({ subscription, endDate } = await assertCanPublishInCategory(
+          const entitlement = await resolvePublishEntitlement(
             userId,
             existingPost.category,
-          ));
+            existingPost.subCategory,
+            // This post must not count against its own free-ad limit.
+            { excludePostId: existingPost.uuid },
+          );
+          if (entitlement.type === "free") {
+            isFreePost = true;
+            freeSource = entitlement.freeSource;
+            endDate = entitlement.expirationDate;
+          } else {
+            ({ subscription, endDate } = entitlement);
+          }
         }
       }
 
@@ -167,10 +188,21 @@ const updatePost = async (req, res, next) => {
         // no subscriptionId, counted as a free ad and never expired.
         existingPost.subscriptionId = subscription.subscriptionId;
         existingPost.adType = "paid";
+        existingPost.isFreePost = false;
+        existingPost.freeSource = undefined;
         existingPost.isExpired = false;
         if (endDate) {
           existingPost.expirationDate = endDate;
         }
+      } else if (isFreePost) {
+        // Free ads never hold a subscriptionId, so they stay out of plan
+        // quotas and out of the subscription-cancel webhook.
+        existingPost.subscriptionId = undefined;
+        existingPost.adType = "free";
+        existingPost.isFreePost = true;
+        existingPost.freeSource = freeSource;
+        existingPost.isExpired = false;
+        existingPost.expirationDate = endDate;
       }
 
       await existingPost.save();

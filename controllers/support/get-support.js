@@ -1,64 +1,56 @@
 const SupportTicket = require("../../models/Support.model");
+const { userLookup } = require("../../helpers/userProjection");
+const { toUserTicket } = require("../../helpers/supportTickets");
 
+/**
+ * GET /api/support: the signed-in user's tickets and reports, newest first,
+ * with the reported ad / user and the public part of each ticket's history.
+ */
 const getSupport = async (req, res, next) => {
   try {
     const { uuid: userId } = req.user;
-    let searchCriteria = {};
-    const { start, limit, status } = req.query;
+    const { start, limit, status, type } = req.query;
 
-    if (status) {
-      searchCriteria.status = status;
-    }
+    const match = {
+      user: userId,
+      isDeleted: { $ne: true },
+      ...(type && { type }),
+      ...(status && { status }),
+    };
 
-    const data = await SupportTicket.aggregate([
-      {
-        $match: { user: userId },
-      },
-      {
-        $match: searchCriteria,
-      },
-      {
-        $lookup: {
-          from: "user",
-          localField: "user",
-          foreignField: "uuid",
-          as: "user",
-        },
-      },
-      {
-        $unwind: {
-          path: "$user",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-
+    const [result] = await SupportTicket.aggregate([
+      { $match: match },
+      { $sort: { createdAt: -1 } },
       {
         $facet: {
           data: [
+            { $skip: parseInt(start || 0) },
+            { $limit: Math.min(parseInt(limit || 20), 100) },
             {
-              $sort: {
-                createdAt: -1,
+              $lookup: {
+                from: "posts",
+                localField: "postId",
+                foreignField: "uuid",
+                pipeline: [
+                  { $project: { _id: 0, uuid: 1, title: 1, file: { $slice: ["$file", 1] }, status: 1 } },
+                ],
+                as: "post",
               },
             },
+            { $unwind: { path: "$post", preserveNullAndEmptyArrays: true } },
+            userLookup({ localField: "reportedUserId", as: "reportedUser" }),
             {
-              $skip: parseInt(start || 0),
-            },
-            {
-              $limit: parseInt(limit || 10),
-            },
-          ],
-          count: [
-            {
-              $count: "count",
+              $unwind: { path: "$reportedUser", preserveNullAndEmptyArrays: true },
             },
           ],
+          count: [{ $count: "count" }],
         },
       },
     ]);
 
     res.json({
-      data: data?.[0].data,
-      count: data?.[0]?.count?.[0]?.count,
+      data: (result?.data || []).map(toUserTicket),
+      count: result?.count?.[0]?.count || 0,
     });
   } catch (error) {
     next(error);

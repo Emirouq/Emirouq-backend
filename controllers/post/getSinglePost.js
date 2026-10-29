@@ -1,5 +1,6 @@
 const Post = require("../../models/Post.model");
 const { searchBy } = require("../../utils/socket/searchBy");
+const { userLookup } = require("../../helpers/userProjection");
 const getSinglePost = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -39,14 +40,7 @@ const getSinglePost = async (req, res, next) => {
           preserveNullAndEmptyArrays: true,
         },
       },
-      {
-        $lookup: {
-          from: "user",
-          localField: "userId",
-          foreignField: "uuid",
-          as: "user",
-        },
-      },
+      userLookup({ localField: "userId", as: "user" }),
       {
         $unwind: {
           path: "$user",
@@ -73,14 +67,7 @@ const getSinglePost = async (req, res, next) => {
           preserveNullAndEmptyArrays: true,
         },
       },
-      {
-        $lookup: {
-          from: "user",
-          localField: "comments.userId",
-          foreignField: "uuid",
-          as: "comments.user",
-        },
-      },
+      userLookup({ localField: "comments.userId", as: "comments.user" }),
       {
         $unwind: {
           path: "$comments.user",
@@ -148,6 +135,12 @@ const getSinglePost = async (req, res, next) => {
           from: "userSubscriptions",
           localField: "subscriptionId",
           foreignField: "subscriptionId",
+          // This route is public. Only the plan is needed (the boost flow
+          // reads subscriptionPlan.planId); the rest of the record holds the
+          // seller's Stripe ids and card fingerprints.
+          pipeline: [
+            { $project: { _id: 0, subscriptionPlan: 1, status: 1, endDate: 1 } },
+          ],
           as: "postSubscription",
         },
       },
@@ -155,17 +148,6 @@ const getSinglePost = async (req, res, next) => {
         $unwind: {
           path: "$postSubscription",
           preserveNullAndEmptyArrays: true,
-        },
-      },
-      //we have to check is the feature add booost in plan is used all or not
-      {
-        $set: {
-          isFeaturedAdBoostUsed: {
-            $gte: [
-              "$postSubscription.featuredAdBoostsUsed",
-              "$postSubscription.subscriptionPlan.featuredAdBoosts",
-            ],
-          },
         },
       },
     ]);

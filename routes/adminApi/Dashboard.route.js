@@ -1,12 +1,12 @@
 const router = require("express").Router();
+const { requirePermission } = require("../../middlewares/requirePermission");
 
 // bring in models and controllers
 const getDashboardSummary = require("../../adminController/dashboard/getDashboardSummary");
 const getDashboardOverview = require("../../adminController/dashboard/getDashboardOverview");
-const roleCheck = require("../../middlewares/roleCheck");
 
 // dashboard data is admin-only
-router.use((req, res, next) => roleCheck(req, res, next, ["admin", "Admin"]));
+router.use(requirePermission("dashboard", "view"));
 
 // get user details
 router.get("/summary", getDashboardSummary);

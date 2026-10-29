@@ -31,7 +31,6 @@ const createPlan = async (req, res, next) => {
         interval,
         interval_count,
         numberOfAds,
-        featuredAdBoosts,
         isVerifiedBadge,
         prioritySupport,
         premiumSupport,
@@ -64,7 +63,6 @@ const createPlan = async (req, res, next) => {
           durationMap[price.recurring.interval] *
           price.recurring.interval_count,
         numberOfAds,
-        featuredAdBoosts,
         isVerifiedBadge,
         prioritySupport,
         premiumSupport,

@@ -63,5 +63,7 @@ const NotificationSchema = new Schema(
 NotificationSchema.index({ receiver: 1, createdAt: -1 });
 NotificationSchema.index({ initiator: 1, createdAt: -1 });
 NotificationSchema.index({ eventType: 1 });
+// Finds the open (unread) notification a new chat message is merged into.
+NotificationSchema.index({ receiver: 1, contextId: 1, eventType: 1, isRead: 1 });
 
 module.exports = model("Notification", NotificationSchema, "notifications");
