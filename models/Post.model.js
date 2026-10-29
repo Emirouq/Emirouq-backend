@@ -171,15 +171,43 @@ const PostSchema = new Schema(
       createdAt: {
         type: Number,
       },
+      // Stripe payment that activated the boost (one activation per payment).
+      paymentIntentId: { type: String },
+      // Boost checkout started but not paid yet; reused instead of charging twice.
+      pendingPaymentIntentId: { type: String },
     },
     adType: {
       type: String,
       enum: ["free", "paid"],
       default: "free",
     },
+    // true when the ad was published through admin-enabled free posting.
+    // Free ads never carry a subscriptionId, so they do not count against a
+    // plan's ad limit and are not touched when a subscription is cancelled.
+    isFreePost: {
+      type: Boolean,
+      default: false,
+    },
+    // Why a free ad is free: "category" (admin marked the category or
+    // sub-category free) or "trial" (admin free-posting campaign).
+    freeSource: {
+      type: String,
+      enum: ["category", "trial"],
+      required: false,
+    },
     expirationDate: {
       type: Number, // Unix timestamp for expiration date
       required: false,
+    },
+    // Set while the ad is hidden because its category or sub-category was
+    // disabled with "hide existing ads". Re-enabling restores previousStatus
+    // and moves expirationDate forward by the time spent hidden, so paid ads
+    // do not lose days they paid for.
+    categoryHold: {
+      previousStatus: { type: String },
+      heldAt: { type: Number }, // unix seconds
+      scope: { type: String, enum: ["category", "subCategory"] },
+      refId: { type: String }, // category or sub-category uuid
     },
     // when user plan get expired, we will set the post expired as true
     isExpired: {

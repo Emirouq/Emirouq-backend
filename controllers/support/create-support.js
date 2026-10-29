@@ -9,6 +9,10 @@ const dayjs = require("dayjs");
 const SupportTicket = require("../../models/Support.model");
 const adminSupportTicket = require("../../services/templates/supportTicket");
 const createTicketNumber = require("../../services/createTicketNumber");
+const { historyEntry } = require("../../helpers/supportTickets");
+const {
+  notifyTicketCreated,
+} = require("../../services/notification/supportNotifications");
 
 const uploadFilesToAws = async (files, folderName) => {
   const location = files?.path || files?.filepath;
@@ -37,7 +41,7 @@ const parseForm = (req) =>
 const createSupport = async (req, res, next) => {
   try {
     const { fields, files } = await parseForm(req);
-    const { uuid: user, userName: firstName, email } = req.user;
+    const { uuid: user, firstName, lastName, email } = req.user;
 
     let { title, description } = fields;
     title = title?.[0];
@@ -58,14 +62,26 @@ const createSupport = async (req, res, next) => {
     const supportTicket = new SupportTicket({
       uuid: uuid(),
       ticketNumber,
+      type: "general",
+      status: "open",
       user,
       title,
       description,
       attachments,
+      history: [
+        historyEntry({
+          action: "created",
+          by: user,
+          byRole: "customer",
+          byName: `${firstName || ""} ${lastName || ""}`.trim(),
+          toStatus: "open",
+        }),
+      ],
     });
 
     await supportTicket.save();
-    // send email
+    notifyTicketCreated(supportTicket);
+    // The ticket is saved; a mail failure must not turn into an error reply.
     await sendEmail(
       ["firebase-services@emirouq.ae"],
       `Support Ticket Created - Ticket Number: ${supportTicket.ticketNumber}`,
@@ -79,9 +95,10 @@ const createSupport = async (req, res, next) => {
         supportDashboardLink: "support@emiroue.ae",
       }),
       // "noreply@tradelizer.com"
-    );
+    ).catch((error) => console.error("Support ticket email failed:", error));
     res.status(200).json({
-      message: "Support ticket created successfully",
+      message: `Support ticket created. Your ticket number is ${supportTicket.ticketNumber}.`,
+      data: { ticketNumber: supportTicket.ticketNumber, uuid: supportTicket.uuid },
     });
   } catch (error) {
     next(error);

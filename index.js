@@ -21,7 +21,15 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(bodyParser.json({ limit: "50mb" }));
+app.use(
+  bodyParser.json({
+    limit: "50mb",
+    // The Stripe webhook signature is computed over the exact raw bytes.
+    verify: (req, res, buf) => {
+      if (req.originalUrl === "/webhook") req.rawBody = buf;
+    },
+  })
+);
 app.use(
   bodyParser.urlencoded({
     limit: "50mb",
@@ -62,6 +70,10 @@ mongoose
       );
     });
     require("./utils/socket/event.utils")(io);
+    // Built-in admin roles; existing admins become Super Admin once.
+    await require("./services/adminRbac")
+      .ensureAdminRbac()
+      .catch((error) => console.error("RBAC setup failed:", error));
     startNotificationLifecycleWorker();
   })
   .catch((err) => console.log(err));

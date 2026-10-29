@@ -11,6 +11,7 @@ const {
 } = require("../services/util/generate_token");
 const UserModel = require("../models/User.model");
 const AdminModel = require("../models/Admin.model");
+const { permissionsFor } = require("../services/adminRbac");
 
 const validateAccessToken = async (req, res, next) => {
   if (!req.headers["authorization"])
@@ -33,6 +34,11 @@ const validateAccessToken = async (req, res, next) => {
             if (!payload)
               throw createError.Unauthorized(
                 "Session expired. Please login again."
+              );
+            // A pre-2FA admin refresh token must not mint a new session.
+            if (payload.role === "Admin" && payload.mfa !== true)
+              throw createError.Unauthorized(
+                "Please sign in again with two-factor authentication."
               );
 
             const resultQuery = await Token.findOne({
@@ -65,6 +71,17 @@ const validateAccessToken = async (req, res, next) => {
                 json_.call(res, object);
               };
               req.user = payload;
+              // Same admin checks as the normal path: still active, and
+              // current permissions (roles may have changed).
+              if (payload.role === "Admin") {
+                const admin = await AdminModel.findOne({ uuid: payload.uuid });
+                if (!admin || admin.isActive === false) {
+                  return next(createError.Unauthorized("Your admin access has been revoked."));
+                }
+                Object.assign(req.user, await permissionsFor(admin), {
+                  roles: admin.roles || [],
+                });
+              }
               return next();
             }
           } catch (error) {
@@ -79,17 +96,41 @@ const validateAccessToken = async (req, res, next) => {
         return next(createError.Unauthorized(message));
       }
     }
+    // Every session token names its user. Without this, findOne({ uuid:
+    // undefined }) below would match the first user / admin in the database.
+    if (!decoded?.uuid) {
+      return next(createError.Unauthorized("Please login again"));
+    }
+    // Admin sessions must come from the two-factor sign-in. Admin tokens
+    // issued before 2FA (no mfa flag) are refused, so every admin signs in
+    // again with a code.
+    if (decoded.role === "Admin" && decoded.mfa !== true) {
+      return next(
+        createError.Unauthorized(
+          "Please sign in again with two-factor authentication."
+        )
+      );
+    }
     let user;
     let payload;
     if (decoded.role === "Admin") {
       user = await AdminModel.findOne({ uuid: decoded.uuid });
+      // Revoked or removed staff lose access immediately, even with a
+      // token that has not expired yet.
+      if (!user || user.isActive === false) {
+        return next(createError.Unauthorized("Your admin access has been revoked."));
+      }
+      const { permissions, isSuperAdmin } = await permissionsFor(user);
       payload = {
         _id: user?._id,
         uuid: user?.uuid,
         firstName: user?.firstName,
         lastName: user?.lastName,
         email: user?.email,
-        role: user?.role,
+        role: "Admin",
+        roles: user?.roles || [],
+        permissions,
+        isSuperAdmin,
       };
     } else {
       user = await UserModel.findOne(

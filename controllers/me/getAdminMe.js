@@ -10,10 +10,19 @@ const getAdminMe = async (req, res, next) => {
     });
     if (!user) throw new httpErrors.Unauthorized("Please login again");
 
+    const admin = user.toObject();
+    delete admin.twoFactor; // secrets, backup-code hashes
+    delete admin.inviteTokenHash;
     res.status(200).json({
       success: true,
       message: "Me details fetched successfully",
-      data: user,
+      data: {
+        ...admin,
+        twoFactorEnabled: !!user.twoFactor?.enabled,
+        // What the panel may show; the API enforces the same list.
+        permissions: currentUser.permissions || [],
+        isSuperAdmin: !!currentUser.isSuperAdmin,
+      },
     });
   } catch (error) {
     next(error);

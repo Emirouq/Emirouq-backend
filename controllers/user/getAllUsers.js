@@ -1,5 +1,8 @@
 const dayjs = require("dayjs");
 const User = require("../../models/User.model");
+const {
+  SECRET_USER_FIELDS_PROJECTION,
+} = require("../../helpers/userProjection");
 
 const getAllUsers = async (req, res, next) => {
   try {
@@ -46,6 +49,7 @@ const getAllUsers = async (req, res, next) => {
       {
         $match: searchCriteria,
       },
+      { $project: SECRET_USER_FIELDS_PROJECTION },
       {
         $facet: {
           data: [

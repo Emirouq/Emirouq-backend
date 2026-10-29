@@ -1,4 +1,9 @@
+const httpErrors = require("http-errors");
 const AttributeOption = require("../../models/AttributeOption.model");
+const {
+  cleanValue,
+  sameValueRegex,
+} = require("../../helpers/masterDataDuplicates");
 
 const updateAttributeOption = async (req, res, next) => {
   try {
@@ -10,15 +15,28 @@ const updateAttributeOption = async (req, res, next) => {
         success: false,
       });
     }
-    if (!value) {
-      throw new Error("Value is Required");
+    const cleaned = cleanValue(value);
+    if (!cleaned) {
+      throw httpErrors.BadRequest("Value is Required");
     }
 
     const findAttributeOption = await AttributeOption.findOne({
       uuid: attributeOptionId,
     });
     if (!findAttributeOption) {
-      throw new Error("Not found");
+      throw httpErrors.NotFound("Not found");
+    }
+
+    const duplicate = await AttributeOption.exists({
+      uuid: { $ne: attributeOptionId },
+      attributeId: findAttributeOption.attributeId,
+      ...(findAttributeOption.parentId
+        ? { parentId: findAttributeOption.parentId }
+        : { parentId: { $in: [null, ""] } }),
+      value: sameValueRegex(cleaned),
+    });
+    if (duplicate) {
+      throw httpErrors.Conflict(`"${cleaned}" already exists`);
     }
 
     await AttributeOption.findOneAndUpdate(
@@ -27,7 +45,7 @@ const updateAttributeOption = async (req, res, next) => {
       },
       {
         $set: {
-          value,
+          value: cleaned,
         },
       },
     );
@@ -42,7 +60,7 @@ const updateAttributeOption = async (req, res, next) => {
         },
         {
           $set: {
-            parentValue: value,
+            parentValue: cleaned,
           },
         },
       );

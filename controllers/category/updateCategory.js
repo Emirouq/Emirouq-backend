@@ -2,6 +2,10 @@ const httpErrors = require("http-errors");
 const Category = require("../../models/Category.model");
 const formidable = require("formidable");
 const { upload } = require("../../services/util/upload-files");
+const {
+  cleanValue,
+  sameValueRegex,
+} = require("../../helpers/masterDataDuplicates");
 
 const updateCategory = async (req, res, next) => {
   try {
@@ -28,13 +32,13 @@ const updateCategory = async (req, res, next) => {
         }
 
         if (title) {
-          const categoryTitle = title[0]?.trim();
+          const categoryTitle = cleanValue(title[0]);
           if (!categoryTitle) {
             throw httpErrors.BadRequest("Title cannot be empty");
           }
 
           const existingTitleCategory = await Category.findOne({
-            title: categoryTitle,
+            title: sameValueRegex(categoryTitle),
             uuid: { $ne: id },
           });
           if (existingTitleCategory) {

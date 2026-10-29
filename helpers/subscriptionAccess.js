@@ -2,6 +2,12 @@ const dayjs = require("dayjs");
 const httpErrors = require("http-errors");
 const UserSubscription = require("../models/UserSubscription.model");
 const { accessChecker } = require("../middlewares/access_checker");
+const { getFreePostEligibility } = require("./freePostAccess");
+const { assertCategoryOpen } = require("./categoryAvailability");
+const {
+  getFreeCategoryRule,
+  freeCategoryExpiry,
+} = require("./freeCategoryAccess");
 
 /**
  * One place that answers "may this user publish an ad in this category?".
@@ -89,12 +95,80 @@ const assertCanPublishInCategory = async (userId, categoryId) => {
   return { subscription, endDate };
 };
 
+/**
+ * Decides how an ad that is going live now is paid for, in this order:
+ *
+ *  1. Free category (admin marked the category / sub-category free): free for
+ *     everyone, and it does not use up a subscriber's plan slots.
+ *  2. A live subscription with ad slots left, exactly as before.
+ *  3. Admin free-posting trial, when there is no plan or its limit is used up.
+ *
+ * The free paths never call Stripe.
+ *
+ * @returns {Promise<
+ *   | { type: "paid", subscription: object, endDate: Date|number }
+ *   | { type: "free", freeSource: "category"|"trial", expirationDate: number }
+ * >}
+ */
+const resolvePublishEntitlement = async (
+  userId,
+  categoryId,
+  subCategoryId,
+  { excludePostId } = {},
+) => {
+  if (!categoryId) {
+    throw httpErrors.BadRequest("Category Id is required");
+  }
+
+  // Disabled categories / sub-categories take no new ads, free or paid.
+  await assertCategoryOpen(categoryId, subCategoryId);
+
+  const freeCategory = await getFreeCategoryRule(categoryId, subCategoryId);
+  if (freeCategory.isFree) {
+    return {
+      type: "free",
+      freeSource: "category",
+      expirationDate: freeCategoryExpiry(freeCategory.validityDays),
+    };
+  }
+
+  try {
+    const { subscription, endDate } = await assertCanPublishInCategory(
+      userId,
+      categoryId,
+    );
+    return { type: "paid", subscription, endDate };
+  } catch (subscriptionError) {
+    if (subscriptionError?.status !== 403) throw subscriptionError;
+
+    const free = await getFreePostEligibility(
+      userId,
+      categoryId,
+      subCategoryId,
+      { excludePostId },
+    );
+
+    if (free.eligible) {
+      return {
+        type: "free",
+        freeSource: "trial",
+        expirationDate: free.expirationDate,
+      };
+    }
+    if (free.available && free.reason) {
+      throw httpErrors.Forbidden(free.reason);
+    }
+    throw subscriptionError;
+  }
+};
+
 module.exports = {
   ACTIVE_STATUSES,
   INACTIVE_STATUSES,
   isWithinTerm,
   getActiveCategorySubscription,
   assertCanPublishInCategory,
+  resolvePublishEntitlement,
   nowInSeconds,
   dayjs,
 };

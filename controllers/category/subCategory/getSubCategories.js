@@ -5,7 +5,7 @@ const getSubCategory = async (req, res, next) => {
     const { id } = req.params;
     // `page` is 1-based, matching getCategory.js. `start` is accepted as a raw
     // offset for older clients that send it (the mobile app does).
-    const { keyword, page, start, limit = 10 } = req.query;
+    const { keyword, page, start, limit = 10, includeInactive } = req.query;
     const limitNum = Math.max(1, Number(limit) || 10);
     const pageNum = Math.max(1, Number(page) || 1);
     const skip =
@@ -23,6 +23,8 @@ const getSubCategory = async (req, res, next) => {
         $match: {
           category: id,
           ...searchCriteria,
+          // The app lists enabled sub-categories only; the admin panel asks for all.
+          ...(includeInactive !== "true" && { isActive: { $ne: false } }),
         },
       },
       {

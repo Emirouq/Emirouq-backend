@@ -2,7 +2,7 @@ const Category = require("../../models/Category.model");
 
 const getCategory = async (req, res, next) => {
   try {
-    const { id, keyword, page = 1, limit = 10 } = req.query;
+    const { id, keyword, page = 1, limit = 10, includeInactive } = req.query;
 
     const pageNum = Number(page);
     const limitNum = Number(limit);
@@ -13,6 +13,11 @@ const getCategory = async (req, res, next) => {
       filter = { uuid: id };
     } else if (keyword) {
       filter = { title: { $regex: keyword, $options: "i" } };
+    }
+
+    // The app lists enabled categories only; the admin panel asks for all.
+    if (!id && includeInactive !== "true") {
+      filter.isActive = { $ne: false };
     }
 
     const query = Category.find(filter).sort({ index: 1 });

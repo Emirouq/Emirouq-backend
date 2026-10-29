@@ -141,6 +141,10 @@ const userSubscriptionModelSchema = new Schema({
 });
 
 userSubscriptionModelSchema.index({ user: 1 });
+// One row per Stripe subscription. Two deliveries of the same invoice.paid
+// arriving at once cannot create a duplicate; the second fails, Stripe
+// retries, and the retry takes the renewal/update path.
+userSubscriptionModelSchema.index({ subscriptionId: 1 }, { unique: true });
 
 const UserSubscription = model(
   "UserSubscription",

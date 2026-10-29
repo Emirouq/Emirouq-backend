@@ -24,11 +24,19 @@ router.get("/list", getAdsPost);
 router.get("/count", getPostCount);
 router.get("/:id", getSinglePost);
 const jwtValidation = require("../../middlewares/jwt_validation");
+const { requirePermission } = require("../../middlewares/requirePermission");
 const deletePost = require("../../controllers/post/deletePost");
 const countViewPost = require("../../controllers/post/countViewPost");
 router.get("/:categoryId/similar", getPostsByCategory);
 router.post("/", jwtValidation, addPost);
-router.put("/updateStatus/:id", jwtValidation, updatePostStatus);
+// Approve / reject / take down: admins with ad moderation rights only. Any
+// signed-in user could call this before, including to approve their own ad.
+router.put(
+  "/updateStatus/:id",
+  jwtValidation,
+  requirePermission("posts", "approve"),
+  updatePostStatus
+);
 router.put("/:id", jwtValidation, updatePost);
 router.get("/favourite/get", jwtValidation, getFavouritePosts);
 router.put("/favourite/:id", jwtValidation, addToFavourite);

@@ -13,6 +13,14 @@ const assumeLogin = require("../../controllers/auth/assume-login");
 router.post("/login", loginUser);
 router.post("/assume-login", assumeLogin);
 router.post("/admin/login", adminLogin);
+// Admin sign-in step 2: authenticator-app code (see controllers/auth/adminTwoFactor.js)
+const { setupTwoFactor, verifyTwoFactor } = require("../../controllers/auth/adminTwoFactor");
+router.post("/admin/2fa/setup", setupTwoFactor);
+router.post("/admin/2fa/verify", verifyTwoFactor);
+// Staff invitations (links emailed by a Super Admin)
+const { getInvite, acceptInvite } = require("../../controllers/auth/adminInvite");
+router.get("/admin/invite/:token", getInvite);
+router.post("/admin/accept-invite", acceptInvite);
 router.post("/register", register);
 router.put("/verify/:token", verifyToken);
 router.put("/setup-password/", setupPassword);

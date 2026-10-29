@@ -3,6 +3,10 @@ const Category = require("../../models/Category.model");
 const formidable = require("formidable");
 const { v4: uuid } = require("uuid");
 const { upload } = require("../../services/util/upload-files");
+const {
+  cleanValue,
+  sameValueRegex,
+} = require("../../helpers/masterDataDuplicates");
 
 const uploadFilesToAws = async (files, folderName) => {
   const location = files?.path || files?.filepath;
@@ -32,8 +36,9 @@ const addCategory = async (req, res, next) => {
           throw httpErrors.BadRequest("Title is required");
         }
 
+        // Case- and space-insensitive: "Cars" and "cars " are one category.
         const existingTitleCategory = await Category.findOne({
-          title: title[0],
+          title: sameValueRegex(title[0]),
         });
         if (existingTitleCategory) {
           throw httpErrors.Conflict("Category with this title already exists");
@@ -80,7 +85,7 @@ const addCategory = async (req, res, next) => {
 
         const newCategory = new Category({
           uuid: uuid(),
-          title: title[0],
+          title: cleanValue(title[0]),
           index: categoryIndex,
           // properties: parsedProperties,
           logo,

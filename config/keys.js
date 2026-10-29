@@ -59,6 +59,17 @@ module.exports = {
       process.env.NODE_ENV === "test"
         ? process.env.STRIPE_TEST_SECRET_KEY
         : process.env.STRIPE_SECRET_KEY,
+    // Signing secret of the webhook endpoint (whsec_…) from the Stripe
+    // dashboard. Without it, events are re-fetched from Stripe instead.
+    webhookSecret:
+      process.env.NODE_ENV === "test"
+        ? process.env.STRIPE_TEST_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET
+        : process.env.STRIPE_WEBHOOK_SECRET,
+    // Prices the server charges; the app only displays them.
+    boostPrice: Number(process.env.BOOST_PRICE_AED || 5.99),
+    currency: "aed",
+    // Stripe API version the app's ephemeral keys must match.
+    apiVersion: "2025-08-27.basil",
   },
   zeptoSecret: process.env.ZEPTO_SECRET,
   expoConfig: {
