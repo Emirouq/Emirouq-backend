@@ -1,4 +1,5 @@
 const SupportTicket = require("../../models/Support.model");
+const { userLookup, SECRET_USER_FIELDS_PROJECTION } = require("../../helpers/userProjection");
 
 const getAllSupportForAdmin = async (req, res, next) => {
   try {
@@ -35,14 +36,7 @@ const getAllSupportForAdmin = async (req, res, next) => {
     }
 
     const data = await SupportTicket.aggregate([
-      {
-        $lookup: {
-          from: "user",
-          localField: "user",
-          foreignField: "uuid",
-          as: "customer",
-        },
-      },
+      userLookup({ localField: "user", as: "customer", projection: SECRET_USER_FIELDS_PROJECTION }),
       {
         $unwind: {
           path: "$customer",

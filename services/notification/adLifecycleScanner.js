@@ -50,6 +50,8 @@ const expireAdsPastDue = async () => {
   const posts = await Post.find({
     status: { $nin: ["expired", "draft", "rejected", "removed"] },
     isExpired: false,
+    // Ads hidden by a disabled category are on hold: their clock is paused.
+    "categoryHold.heldAt": { $exists: false },
     expirationDate: {
       $lte: now,
     },

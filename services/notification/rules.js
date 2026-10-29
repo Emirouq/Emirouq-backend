@@ -4,13 +4,21 @@ const withAd = (text, ctx) =>
   ctx.adTitle ? `${text} "${ctx.adTitle}".` : `${text}.`;
 
 const notificationRules = {
-  [NotificationEventType.MESSAGE_RECEIVED]: (ctx) => ({
-    title: "New Message",
-    message: ctx.actorName
-      ? `You received a new message from ${ctx.actorName}.`
-      : "You received a new message about your ad.",
-    actions: { view: true, reply: true },
-  }),
+  [NotificationEventType.MESSAGE_RECEIVED]: (ctx) => {
+    // Chat notifications are merged per conversation; groupCount is how many
+    // messages this one notification stands for.
+    const count = Number(ctx.data?.groupCount) || 1;
+    const from = ctx.actorName ? ` from ${ctx.actorName}` : "";
+    const about = ctx.data?.adTitle ? ` about "${ctx.data.adTitle}"` : "";
+    return {
+      title: count > 1 ? `${count} New Messages` : "New Message",
+      message:
+        count > 1
+          ? `You have ${count} new messages${from}${about}.`
+          : `You received a new message${from}${about}.`,
+      actions: { view: true, reply: true },
+    };
+  },
   [NotificationEventType.SELLER_REPLIED]: () => ({
     title: "Seller Replied",
     message: "The seller replied to your inquiry.",
@@ -60,9 +68,11 @@ const notificationRules = {
   }),
   [NotificationEventType.AD_REJECTED]: (ctx) => ({
     title: "Ad Rejected",
-    message: ctx.adTitle
-      ? `Your ad "${ctx.adTitle}" was rejected due to policy review.`
-      : "Your ad was rejected due to policy review.",
+    message:
+      (ctx.adTitle
+        ? `Your ad "${ctx.adTitle}" was rejected due to policy review.`
+        : "Your ad was rejected due to policy review.") +
+      (ctx.data?.rejectedReason ? ` Reason: ${ctx.data.rejectedReason}` : ""),
     actions: { view: true, edit: true },
   }),
   [NotificationEventType.AD_REQUIRES_CHANGES]: (ctx) => ({
@@ -85,9 +95,13 @@ const notificationRules = {
     message: "Your ad will expire in 24 hours.",
     actions: { view: true },
   }),
-  [NotificationEventType.AD_REMOVED_BY_ADMIN]: () => ({
-    title: "Ad Removed",
-    message: "Your ad was removed due to policy review.",
+  [NotificationEventType.AD_REMOVED_BY_ADMIN]: (ctx) => ({
+    title: ctx.data?.status === "paused" ? "Ad Deactivated" : "Ad Removed",
+    message:
+      (ctx.data?.status === "paused"
+        ? withAd("Your ad was deactivated after a policy review", ctx)
+        : withAd("Your ad was removed after a policy review", ctx)) +
+      (ctx.data?.reason ? ` Reason: ${ctx.data.reason}` : ""),
     actions: { view: true },
   }),
   [NotificationEventType.AD_BOOSTED]: () => ({
@@ -185,16 +199,35 @@ const notificationRules = {
     message: "A saved item is no longer available.",
     actions: { view: true },
   }),
-  [NotificationEventType.REPORT_SUBMITTED]: () => ({
-    title: "Report Submitted",
-    message: "We received your report and are reviewing it.",
-    actions: { view: true },
-  }),
-  [NotificationEventType.REPORT_STATUS_UPDATED]: () => ({
-    title: "Report Updated",
-    message: "Your report status has been updated.",
-    actions: { view: true },
-  }),
+  [NotificationEventType.REPORT_SUBMITTED]: (ctx) => {
+    const ticket = ctx.data?.ticketNumber ? ` Ticket ${ctx.data.ticketNumber}.` : "";
+    return ctx.data?.ticketType === "general"
+      ? {
+          title: "Support Ticket Created",
+          message: `We received your request and will reply soon.${ticket}`,
+          actions: { view: true },
+        }
+      : {
+          title: "Report Submitted",
+          message: `Thanks for your report. Our team will review it.${ticket}`,
+          actions: { view: true },
+        };
+  },
+  [NotificationEventType.REPORT_STATUS_UPDATED]: (ctx) => {
+    const isGeneral = ctx.data?.ticketType === "general";
+    const ticket = ctx.data?.ticketNumber ? ` ${ctx.data.ticketNumber}` : "";
+    const status = ctx.data?.statusLabel;
+    const response = ctx.data?.response ? ` ${ctx.data.response}` : "";
+    return {
+      title: isGeneral ? "Support Ticket Updated" : "Report Updated",
+      message:
+        (status
+          ? `Your ${isGeneral ? "ticket" : "report"}${ticket} is now ${status}.`
+          : `There is an update on your ${isGeneral ? "ticket" : "report"}${ticket}.`) +
+        response,
+      actions: { view: true },
+    };
+  },
   [NotificationEventType.ACCOUNT_WARNING]: () => ({
     title: "Account Warning",
     message: "A policy issue was detected on your account.",

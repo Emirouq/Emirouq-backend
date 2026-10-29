@@ -4,8 +4,9 @@ const formidable = require("formidable");
 const { v4: uuid } = require("uuid");
 const { upload } = require("../../services/util/upload-files");
 const {
-  assertCanPublishInCategory,
+  resolvePublishEntitlement,
 } = require("../../helpers/subscriptionAccess");
+const { assertCategoryOpen } = require("../../helpers/categoryAvailability");
 const {
   notifySavedSearchMatches,
 } = require("../../services/notification/favoriteNotifications");
@@ -56,8 +57,15 @@ const addPost = async (req, res, next) => {
 
     const draftMode = isDraft?.[0];
 
+    // No new ads, drafts included, in a disabled category or sub-category.
+    if (category?.[0]) {
+      await assertCategoryOpen(category[0], subCategory?.[0]);
+    }
+
     let endDate;
     let subscription = null;
+    let isFreePost = false;
+    let freeSource;
     if (!draftMode) {
       if (!title) throw httpErrors.BadRequest("Title is required");
       if (!description) throw httpErrors.BadRequest("Description is required");
@@ -65,11 +73,20 @@ const addPost = async (req, res, next) => {
         throw httpErrors.BadRequest("Subcategory Id is required");
       if (!category) throw httpErrors.BadRequest("Category Id is required");
 
-      // Throws 403 when there is no active, in-term plan for this category.
-      ({ subscription, endDate } = await assertCanPublishInCategory(
+      // Throws 403 when there is neither an active, in-term plan for this
+      // category nor admin-enabled free posting that covers it.
+      const entitlement = await resolvePublishEntitlement(
         userId,
         category?.[0],
-      ));
+        subCategory?.[0],
+      );
+      if (entitlement.type === "free") {
+        isFreePost = true;
+        freeSource = entitlement.freeSource;
+        endDate = entitlement.expirationDate;
+      } else {
+        ({ subscription, endDate } = entitlement);
+      }
     }
 
     let parsedProperties = [];
@@ -129,6 +146,8 @@ const addPost = async (req, res, next) => {
       file: uploadedFiles,
       expirationDate: !draftMode ? endDate : null,
       adType: subscription?.subscriptionId ? "paid" : "free",
+      isFreePost,
+      ...(freeSource && { freeSource }),
       ...(subscription?.subscriptionId && {
         subscriptionId: subscription.subscriptionId,
       }),

@@ -6,6 +6,7 @@ router.use("/auth", require("./Auth.route"));
 const jwtValidation = require("../../middlewares/jwt_validation");
 
 router.use("/stripe", jwtValidation, require("./Stripe.route"));
+router.use("/payments", jwtValidation, require("./Payment.route"));
 router.use("/me", jwtValidation, require("../../controllers/me/getMe"));
 router.use("/notifications", jwtValidation, require("./Notification.route"));
 router.use(

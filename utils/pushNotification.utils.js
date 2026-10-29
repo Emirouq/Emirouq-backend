@@ -14,6 +14,8 @@ async function pushNotification({ expoPushToken, message }) {
     {
       to: expoPushToken,
       sound: "default",
+      // `title` was never sent, so every push showed only its body.
+      ...(message.title && { title: message.title }),
       body: message.body,
       data: message.data ?? {},
     },

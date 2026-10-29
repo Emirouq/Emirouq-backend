@@ -3,6 +3,11 @@ const UserSubscription = require("../../models/UserSubscription.model");
 const {
   getActiveCategorySubscription,
 } = require("../../helpers/subscriptionAccess");
+const { getFreePostEligibility } = require("../../helpers/freePostAccess");
+const { getFreeCategoryRule } = require("../../helpers/freeCategoryAccess");
+const {
+  getCategoryAvailability,
+} = require("../../helpers/categoryAvailability");
 
 /**
  * Tells the app whether this user may publish in a category, and what plans it
@@ -10,10 +15,28 @@ const {
  */
 const checkSubscriptionForSpecificCategory = async (req, res, next) => {
   const { categoryId } = req.params;
+  // Optional: free posting can be enabled for single sub-categories.
+  const { subCategoryId, postId } = req.query;
   try {
     const { uuid: user } = req.user;
     if (!categoryId) {
       throw new Error("Category ID is required");
+    }
+
+    // Disabled category: nothing to buy, nothing to publish.
+    const availability = await getCategoryAvailability(categoryId, subCategoryId);
+    if (!availability.open) {
+      return res.json({
+        message: availability.message,
+        isSubscribed: false,
+        hasLapsedSubscription: false,
+        subscription: null,
+        subscriptionPlan: [],
+        freePost: { available: false, eligible: false },
+        freeCategory: { isFree: false, validityDays: null },
+        categoryDisabled: true,
+        canPublish: false,
+      });
     }
 
     // The old query matched ANY subscription row for the category, with no
@@ -45,12 +68,38 @@ const checkSubscriptionForSpecificCategory = async (req, res, next) => {
         }),
       );
 
+    // Admin-marked Free category: anyone may publish, no plan, no payment.
+    const freeCategory = await getFreeCategoryRule(categoryId, subCategoryId);
+
+    // Admin-enabled free posting. When eligible, the app publishes without
+    // opening the plan sheet, so no payment gateway is involved.
+    const freePost = await getFreePostEligibility(
+      user,
+      categoryId,
+      subCategoryId,
+      { excludePostId: postId },
+    );
+
     res.json({
       message: isSubscribed
         ? "User is subscribed to this category"
         : "User is not subscribed to this category",
       isSubscribed,
       hasLapsedSubscription,
+      freePost: {
+        available: freePost.available,
+        eligible: freePost.eligible,
+        reason: freePost.reason || null,
+        adExpiryDays: freePost.adExpiryDays || null,
+        validUntil: freePost.validUntil || null,
+        remaining: freePost.remaining ?? null,
+      },
+      freeCategory: {
+        isFree: freeCategory.isFree,
+        validityDays: freeCategory.validityDays || null,
+      },
+      categoryDisabled: false,
+      canPublish: freeCategory.isFree || isSubscribed || freePost.eligible,
       subscription: activeSubscription,
       subscriptionPlan,
     });

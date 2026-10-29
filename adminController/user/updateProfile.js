@@ -21,7 +21,8 @@ const updateProfile = async (req, res, next) => {
         ...(email && { email: email.toLowerCase() }),
         ...(profileImage?.Location && { profileImage: profileImage.Location }),
       },
-      { new: true }
+      // Never send back 2FA secrets, backup-code hashes or invite tokens.
+      { new: true, projection: { twoFactor: 0, inviteTokenHash: 0 } }
     );
     res.json({
       message: "Updated successfully",

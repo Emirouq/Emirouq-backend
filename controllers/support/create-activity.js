@@ -23,7 +23,9 @@ const createActivity = async (req, res, next) => {
     const { uuid: user } = req.user;
     const { supportId } = req.params;
     const support = await SupportTicket.findOne({ uuid: supportId });
-    if (!support) {
+    const isAdmin = ["admin", "Admin"].includes(req.user?.role);
+    // Only the ticket's owner or an admin may write on it.
+    if (!support || (!isAdmin && support.user !== user)) {
       throw new Error("Support ticket not found");
     }
     form.parse(req, async (err, fields, files) => {

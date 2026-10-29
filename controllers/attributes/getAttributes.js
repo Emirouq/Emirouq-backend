@@ -30,7 +30,7 @@ const getAttributes = async (req, res, next) => {
 
       {
         $facet: {
-          data: [{ $skip: +start || 0 }, { $limit: +limit || 10 }],
+          data: [{ $skip: +start || 0 }, { $limit: +limit || 100 }],
           count: [
             {
               $count: "total",

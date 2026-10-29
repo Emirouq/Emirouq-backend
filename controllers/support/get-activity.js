@@ -1,4 +1,5 @@
 const SupportTicket = require("../../models/Support.model");
+const { userLookup, SECRET_USER_FIELDS_PROJECTION } = require("../../helpers/userProjection");
 
 const getActivity = async (req, res, next) => {
   try {
@@ -8,7 +9,14 @@ const getActivity = async (req, res, next) => {
 
     const data = await SupportTicket.aggregate([
       {
-        $match: { ...searchCriteria, uuid: supportId },
+        $match: {
+          ...searchCriteria,
+          uuid: supportId,
+          // Only the ticket's owner or an admin may read it.
+          ...(!["admin", "Admin"].includes(req.user?.role) && {
+            user: req.user?.uuid,
+          }),
+        },
       },
       {
         $lookup: {
@@ -18,14 +26,7 @@ const getActivity = async (req, res, next) => {
           as: "activity",
         },
       },
-      {
-        $lookup: {
-          from: "user",
-          localField: "user",
-          foreignField: "uuid",
-          as: "customer",
-        },
-      },
+      userLookup({ localField: "user", as: "customer", projection: SECRET_USER_FIELDS_PROJECTION }),
       {
         $unwind: {
           path: "$customer",

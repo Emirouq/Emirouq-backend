@@ -1,5 +1,6 @@
 const Conversation = require("../../models/Conversation.model");
 const { searchBy } = require("../../utils/socket/searchBy");
+const { userLookup } = require("../../helpers/userProjection");
 const getConversation = async (req, res, next) => {
   try {
     const { uuid: userId } = req.user;
@@ -79,14 +80,7 @@ const getConversation = async (req, res, next) => {
         },
       },
 
-      {
-        $lookup: {
-          from: "user",
-          localField: "receiver",
-          foreignField: "uuid",
-          as: "receiver",
-        },
-      },
+      userLookup({ localField: "receiver", as: "receiver" }),
       {
         $unwind: "$receiver",
       },

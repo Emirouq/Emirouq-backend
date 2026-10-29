@@ -18,8 +18,10 @@ const getFeaturedAds = async (req, res, next) => {
         $match: {
           "featuredAd.isFeatured": true,
           ...searchCriteria,
-          // status: "active",
-          // isExpired: false,
+          // Only live ads. Without this, pending, rejected, expired and
+          // admin-deactivated or removed ads were shown as featured.
+          status: "active",
+          isExpired: { $ne: true },
           // subscriptionId: { $exists: true, $ne: null },
         },
       },

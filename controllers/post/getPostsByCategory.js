@@ -14,6 +14,9 @@ const getPostsByCategory = async (req, res, next) => {
         $match: {
           category: categoryId,
           ...searchCriteria,
+          // Only live ads (same reason as featured ads).
+          status: "active",
+          isExpired: { $ne: true },
           // $or: [
           //   {
           //     isExpired: false,
@@ -35,7 +38,6 @@ const getPostsByCategory = async (req, res, next) => {
         $limit: 5,
       },
     ]);
-    console.log("data", data);
     res.json({
       message: "Fetched successfully",
       data: data,

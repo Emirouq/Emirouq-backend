@@ -2,6 +2,7 @@ const SubscriptionPlan = require("../../../models/SubscriptionPlan.model");
 const UserSubscription = require("../../../models/UserSubscription.model");
 const User = require("../../../models/User.model");
 const stripe = require("../getStripe");
+const { boostPrice } = require("../../../config/keys").stripe;
 const { v4: uuid } = require("uuid");
 const dayjs = require("dayjs");
 const Post = require("../../../models/Post.model");
@@ -21,27 +22,48 @@ const {
   addBoostExpiryReminderJob,
   addPackageRenewalReminderJob,
 } = require("../../notification/jobs/lifecycleQueue");
+const {
+  recordInvoiceTransaction,
+  recordPaymentIntentTransaction,
+  recordRefund,
+} = require("../recordTransaction");
 const invoicePaid = async (data) => {
   console.log(data, "data");
 
-  const user = await User.findOne({ customerId: data?.object?.customer });
+  // getUserByCustomerId returns null for a missing id. A bare
+  // findOne({ customerId: undefined }) would match the FIRST user.
+  const user = await getUserByCustomerId(data?.object?.customer);
   if (!user) {
     console.log("User not found");
     return;
   }
-  const priceId = data?.object?.parent?.subscription_details?.metadata?.priceId;
-  const categoryId =
-    data?.object?.parent?.subscription_details?.metadata?.categoryId;
-  const plan = await SubscriptionPlan.findOne({ priceId, categoryId });
-  if (!plan) {
-    console.log("Plan not found");
+  const stripeSubscriptionId =
+    data?.object?.parent?.subscription_details?.subscription ||
+    data?.object?.subscription;
+  if (!stripeSubscriptionId) {
+    console.log("Invoice is not for a subscription");
     return;
   }
-  const subscription = await stripe.subscriptions.retrieve(
-    data?.object?.parent?.subscription_details?.subscription
-  );
+  const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
   if (!subscription) {
     console.log("Subscription not found");
+    return;
+  }
+  // The plan comes from our metadata, or else from the Stripe price itself.
+  // Never query with empty values: Mongoose drops undefined filters, which
+  // would match whatever plan happens to be first.
+  const metadata = data?.object?.parent?.subscription_details?.metadata || {};
+  const priceId = metadata.priceId || subscription?.items?.data?.[0]?.price?.id;
+  if (!priceId) {
+    console.log("Price not found");
+    return;
+  }
+  const plan = await SubscriptionPlan.findOne({
+    priceId,
+    ...(metadata.categoryId && { categoryId: metadata.categoryId }),
+  });
+  if (!plan) {
+    console.log("Plan not found");
     return;
   }
 
@@ -66,8 +88,42 @@ const invoicePaid = async (data) => {
     charge: invoice?.charge?.id,
   };
 
+  // invoice.paid fires on the first payment AND on every renewal. It used to
+  // create a new UserSubscription each time; a renewal now extends the
+  // existing row instead.
+  const periodStart = subscription?.items?.data?.[0]?.current_period_start;
+  const periodEnd = subscription?.items?.data?.[0]?.current_period_end;
+  const existingSubscription = await UserSubscription.findOne({
+    subscriptionId: subscription?.id,
+  });
+  if (existingSubscription) {
+    const isNewPeriod =
+      Number(periodEnd) > Number(existingSubscription.endDate || 0);
+    await UserSubscription.updateOne(
+      { uuid: existingSubscription.uuid },
+      {
+        $set: {
+          startDate: periodStart,
+          endDate: periodEnd,
+          status: "active",
+          defaultPaymentMethod: subscription?.default_payment_method,
+        },
+        ...(isNewPeriod && { $inc: { renew_count: 1 } }),
+      }
+    );
+    await recordInvoiceTransaction({
+      invoiceId: invoice?.id,
+      user,
+      plan,
+      userSubscriptionId: existingSubscription.uuid,
+      status: "succeeded",
+    });
+    return;
+  }
+
+  const userSubscriptionId = uuid();
   await UserSubscription.create({
-    uuid: uuid(),
+    uuid: userSubscriptionId,
     user: user.uuid,
     customerId: user?.customerId,
     subscriptionId: subscription?.id,
@@ -80,7 +136,6 @@ const invoicePaid = async (data) => {
       interval_count: plan?.interval_count,
       duration: plan?.duration,
       numberOfAds: plan?.numberOfAds,
-      featuredAdBoosts: plan?.featuredAdBoosts,
       isVerifiedBadge: plan?.isVerifiedBadge,
       prioritySupport: plan?.prioritySupport,
       premiumSupport: plan?.premiumSupport,
@@ -91,6 +146,14 @@ const invoicePaid = async (data) => {
     status: "active",
     fingerPrint: invoiceObject?.fingerPrint,
     defaultPaymentMethod: subscription?.default_payment_method,
+  });
+
+  await recordInvoiceTransaction({
+    invoiceId: invoice?.id,
+    user,
+    plan,
+    userSubscriptionId,
+    status: "succeeded",
   });
 
   await emitPaymentNotification(user, NotificationEventType.PAYMENT_SUCCESSFUL, {
@@ -128,78 +191,95 @@ const invoicePaid = async (data) => {
   });
 };
 
-const paymentIntent = async (data) => {
-  console.log(data, "data");
+/** Is this payment intent one of our one-off ad boost payments? */
+const isBoostIntent = (intent) =>
+  intent?.metadata?.purpose === "boost" ||
+  // Payment sheets created by older app versions.
+  intent?.metadata?.isFeaturedAd === "true";
 
-  const user = await User.findOne({ customerId: data?.object?.customer });
+/**
+ * payment_intent.succeeded: activates a paid boost.
+ *
+ * Everything is re-read from Stripe and checked on the server: the intent
+ * really succeeded, it is a boost we created, it paid at least the boost
+ * price, and this intent has not been applied before. Subscription payments
+ * are handled by invoice.paid.
+ */
+const paymentIntent = async (data) => {
+  const intent = await stripe.paymentIntents.retrieve(data?.object?.id);
+  if (!isBoostIntent(intent)) return;
+  const user = await User.findOne({ customerId: intent?.customer });
   if (!user) {
     console.log("User not found");
     return;
   }
-  const paymentIntent = await stripe.paymentIntents.retrieve(data?.object?.id);
-  console.log(paymentIntent, "paymentIntent");
+  if (intent.status !== "succeeded") return;
 
-  await emitPaymentNotification(user, NotificationEventType.PAYMENT_SUCCESSFUL, {
-    contextId: paymentIntent?.id,
-    contextType: "payment",
-    amount: paymentIntent?.amount / 100,
-    currency: paymentIntent?.currency,
-    paymentIntentId: paymentIntent?.id,
-    data: {
-      metadata: paymentIntent?.metadata,
-    },
+  await recordPaymentIntentTransaction({
+    paymentIntentId: intent.id,
+    user,
+    status: "succeeded",
   });
 
-  const post = await Post.findOne({
-    uuid: data?.object?.metadata?.postId,
-  });
-  if (!post) {
-    console.log("Post not found");
+  const minimum = Math.round(boostPrice * 100);
+  const postId = intent.metadata?.postId;
+  // No id = nothing to boost (a bare findOne would return the first ad).
+  const post = postId ? await Post.findOne({ uuid: postId }) : null;
+  if (!post || intent.amount_received < minimum) {
+    // Paid, but nothing valid to boost (ad deleted, or an old app paid a
+    // tampered amount). Recorded above so an admin can refund it.
+    console.warn(
+      `Boost payment ${intent.id} not applied: ${!post ? "post missing" : "amount below price"}`
+    );
     return;
   }
 
+  // Applies once: the filter skips posts this intent already boosted.
   const updatedPost = await Post.findOneAndUpdate(
-    {
-      uuid: post.uuid,
-    },
+    { uuid: post.uuid, "featuredAd.paymentIntentId": { $ne: intent.id } },
     {
       $set: {
-        "featuredAd.isFeatured":
-          data?.object?.metadata?.isFeaturedAd === "true",
-        "featuredAd.price": paymentIntent?.amount / 100,
+        "featuredAd.isFeatured": true,
+        "featuredAd.price": intent.amount_received / 100,
         "featuredAd.createdAt": getUtcUnixTimestamp(),
+        "featuredAd.paymentIntentId": intent.id,
       },
+      $unset: { "featuredAd.pendingPaymentIntentId": "" },
     },
     { new: true }
   );
+  if (!updatedPost) return; // already applied by an earlier delivery
 
-  if (updatedPost?.featuredAd?.isFeatured) {
-    await emitAdNotification(updatedPost, NotificationEventType.AD_BOOSTED, {
-      data: {
-        amount: paymentIntent?.amount / 100,
-        paymentIntentId: paymentIntent?.id,
-      },
-    });
-    await addBoostExpiryReminderJob({
-      postId: updatedPost.uuid,
-      endDate: updatedPost.expirationDate,
-    });
-  }
-
-  // also update the subscription plan used for featured ad boosts and increment the count , how many times the user has used the featured ad boosts
-  await UserSubscription.findOneAndUpdate(
-    {
-      subscriptionId: post?.subscriptionId,
+  await emitPaymentNotification(user, NotificationEventType.PAYMENT_SUCCESSFUL, {
+    contextId: intent.id,
+    contextType: "payment",
+    amount: intent.amount_received / 100,
+    currency: intent.currency,
+    paymentIntentId: intent.id,
+    data: { postId: post.uuid, purpose: "boost" },
+  });
+  await emitAdNotification(updatedPost, NotificationEventType.AD_BOOSTED, {
+    data: {
+      amount: intent.amount_received / 100,
+      paymentIntentId: intent.id,
     },
-    {
-      $inc: {
-        featuredAdBoostsUsed: 1,
-      },
-    }
-  );
+  });
+  await addBoostExpiryReminderJob({
+    postId: updatedPost.uuid,
+    endDate: updatedPost.expirationDate,
+  });
+};
+
+/** payment_intent.processing / .canceled for boosts: record, never activate. */
+const paymentIntentPendingOrCanceled = async (data, status) => {
+  const intent = data?.object;
+  if (!isBoostIntent(intent)) return;
+  const user = await getUserByCustomerId(intent?.customer);
+  if (!user) return;
+  await recordPaymentIntentTransaction({ paymentIntentId: intent.id, user, status });
 };
 const subscriptionCancelled = async (data) => {
-  const user = await User.findOne({ customerId: data?.object?.customer });
+  const user = await getUserByCustomerId(data?.object?.customer);
   if (!user) {
     console.log("User not found");
     return;
@@ -328,6 +408,21 @@ const invoicePaymentFailed = async (data) => {
     data?.object?.parent?.subscription_details?.subscription ||
     data?.object?.subscription;
 
+  const failedPriceId = data?.object?.parent?.subscription_details?.metadata?.priceId;
+  const failedPlan = failedPriceId
+    ? await SubscriptionPlan.findOne({ priceId: failedPriceId }).lean()
+    : null;
+  const ownSubscription = subscriptionId
+    ? await UserSubscription.findOne({ subscriptionId }).lean()
+    : null;
+  await recordInvoiceTransaction({
+    invoiceId: data?.object?.id,
+    user,
+    plan: failedPlan || undefined,
+    userSubscriptionId: ownSubscription?.uuid,
+    status: "failed",
+  });
+
   await emitPaymentNotification(user, NotificationEventType.PAYMENT_FAILED, {
     contextId: data?.object?.id,
     contextType: "payment",
@@ -342,6 +437,19 @@ const paymentIntentFailed = async (data) => {
   const user = await getUserByCustomerId(paymentIntent?.customer);
   if (!user) {
     console.log("User not found");
+    return;
+  }
+
+  // Subscription invoices are recorded by invoice.payment_failed; only
+  // one-off payments (ad boosts) are recorded here.
+  if (isBoostIntent(paymentIntent)) {
+    await recordPaymentIntentTransaction({
+      paymentIntentId: paymentIntent?.id,
+      user,
+      status: "failed",
+    });
+  } else {
+    // Subscription payments are reported by invoice.payment_failed.
     return;
   }
 
@@ -366,6 +474,23 @@ const refundUpdated = async (data) => {
   if (!refund) {
     console.log("Refund not found");
     return;
+  }
+
+  const refundedTransaction = await recordRefund(refund);
+  // A fully refunded boost is switched off; subscriptions are handled by the
+  // admin refund action (which can cancel the plan).
+  if (
+    refundedTransaction?.type === "boost" &&
+    refundedTransaction.status === "refunded" &&
+    refundedTransaction.postId
+  ) {
+    await Post.updateOne(
+      {
+        uuid: refundedTransaction.postId,
+        "featuredAd.paymentIntentId": refundedTransaction.paymentIntentId,
+      },
+      { $set: { "featuredAd.isFeatured": false } }
+    );
   }
 
   const paymentIntentId = refund?.payment_intent;
@@ -425,4 +550,6 @@ module.exports = {
   subscriptionCancelled,
   paymentIntent,
   paymentIntentFailed,
+  paymentIntentPendingOrCanceled,
+  isBoostIntent,
 };

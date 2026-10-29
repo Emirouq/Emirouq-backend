@@ -3,6 +3,24 @@ const SubCategory = require("../../../models/SubCategory.model");
 const Attribute = require("../../../models/Attribute.model");
 const { v4: uuid } = require("uuid");
 const uploadBase64File = require("../../../services/util/upload-base64-file");
+const {
+  cleanValue,
+  normalizeValue,
+  sameValueRegex,
+} = require("../../../helpers/masterDataDuplicates");
+/** Rejects attribute labels repeated within one request (case-insensitive). */
+const assertUniqueLabels = (labels) => {
+  const seen = new Set();
+  for (const label of labels) {
+    const key = normalizeValue(label);
+    if (!key) continue;
+    if (seen.has(key)) {
+      throw httpErrors.Conflict(`Attribute "${cleanValue(label)}" is listed twice`);
+    }
+    seen.add(key);
+  }
+};
+
 
 const addSubCategory = async (req, res, next) => {
   try {
@@ -14,7 +32,19 @@ const addSubCategory = async (req, res, next) => {
     if (!categoryId) {
       throw httpErrors.BadRequest("Category is required");
     }
-    console.log("properties", properties);
+
+    // Sub-category names are unique within their category.
+    if (
+      await SubCategory.exists({
+        category: categoryId,
+        title: sameValueRegex(title),
+      })
+    ) {
+      throw httpErrors.Conflict(
+        `Sub-category "${cleanValue(title)}" already exists in this category`
+      );
+    }
+    assertUniqueLabels((properties || []).map((prop) => prop?.label));
 
     let logo = null;
     if (image) {
@@ -27,13 +57,13 @@ const addSubCategory = async (req, res, next) => {
 
     const newSubCategory = new SubCategory({
       uuid: uuid(),
-      title: title,
+      title: cleanValue(title),
       category: categoryId,
       isActive: true,
       logo,
     });
 
-    for (const prop of properties) {
+    for (const prop of properties || []) {
       const { label, filterType, order, visibleInFilter, dependsOn } = prop;
       const newAttribute = new Attribute({
         uuid: uuid(),

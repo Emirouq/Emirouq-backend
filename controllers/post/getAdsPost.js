@@ -22,6 +22,7 @@ const getAdsPost = async (req, res, next) => {
       keyword,
       properties, // add this line
       city,
+      adSource,
     } = req.query;
     // const { uuid: userId } = req.user;
     // for search by status, result, tradeType, tags, keyword, startDate, endDate
@@ -63,6 +64,18 @@ const getAdsPost = async (req, res, next) => {
     }
 
     const matchStage = { ...searchCriteria, ...search, isExpired: false };
+    // Admin filter: how the ad was paid for when it was published. This is
+    // stamped on the ad, so it stays correct after a category changes
+    // between Free and Paid.
+    if (adSource === "free_category") {
+      matchStage.isFreePost = true;
+      matchStage.freeSource = "category";
+    } else if (adSource === "free_trial") {
+      matchStage.isFreePost = true;
+      matchStage.freeSource = { $ne: "category" };
+    } else if (adSource === "paid") {
+      matchStage.adType = "paid";
+    }
     if (propertyAnd.length) {
       // merge with any existing $and (e.g. keyword+city combo from searchBy)
       // instead of overwriting it

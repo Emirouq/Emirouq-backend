@@ -8,6 +8,7 @@ const {
   notificationService,
   NotificationEventType,
 } = require("../../services/notification");
+const { userLookup } = require("../../helpers/userProjection");
 const UserState = {
   users: [],
   setUsers: function (newUsers) {
@@ -58,14 +59,7 @@ const getConversationDetails = async (conversationId, userId) => {
       },
     },
 
-    {
-      $lookup: {
-        from: "user",
-        localField: "receiver",
-        foreignField: "uuid",
-        as: "receiver",
-      },
-    },
+    userLookup({ localField: "receiver", as: "receiver" }),
     {
       $unwind: "$receiver",
     },
@@ -326,24 +320,38 @@ const socketEvents = (io) => {
         audio,
         seenBy,
       });
-      notificationService
-        .emit(NotificationEventType.MESSAGE_RECEIVED, {
-          initiatorId: senderId,
-          receiverId,
-          initiatorRole: "customer",
-          receiverRole: "customer",
-          initiatorName: senderName,
-          contextId: conversationId,
-          contextType: "message",
-          data: {
-            conversationId,
-            messageId: uuid,
-            message: `You have a new message from ${senderName}`,
-          },
-        })
-        .catch((error) => {
-          console.error("Message notification failed:", error);
-        });
+      // No notification while the receiver has this chat open: they are
+      // reading the message right now. Otherwise merge into one notification
+      // per conversation instead of one per message.
+      if (!userIsInConversation?.includes(receiverId)) {
+        notificationService
+          .emit(
+            NotificationEventType.MESSAGE_RECEIVED,
+            {
+              initiatorId: senderId,
+              receiverId,
+              initiatorRole: "customer",
+              receiverRole: "customer",
+              initiatorName: senderName,
+              contextId: conversationId,
+              contextType: "message",
+              data: {
+                conversationId,
+                messageId: uuid,
+                senderId,
+                senderName,
+                postId: conversation?.postId || post?.uuid,
+                adTitle: post?.title,
+                preview: lastMessage ? String(lastMessage).slice(0, 120) : "",
+                message: `You have a new message from ${senderName}`,
+              },
+            },
+            { group: true },
+          )
+          .catch((error) => {
+            console.error("Message notification failed:", error);
+          });
+      }
 
       io.to(receiverId).emit("message", {
         message: messageData,

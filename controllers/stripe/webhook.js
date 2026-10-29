@@ -1,96 +1,76 @@
 const stripe = require("../../services/stripe/getStripe");
-const UserModel = require("../../models/User.model");
-const Transaction = require("../../models/Transaction.model");
-const dayjs = require("dayjs");
-const { v4: uuid } = require("uuid");
+const { webhookSecret } = require("../../config/keys").stripe;
+const StripeEvent = require("../../models/StripeEvent.model");
 const {
   invoicePaid,
-  chargeSuccess,
   customerSubscriptionUpdated,
   subscriptionCancelled,
   paymentIntent,
   paymentIntentFailed,
+  paymentIntentPendingOrCanceled,
   invoicePaymentFailed,
   refundUpdated,
 } = require("../../services/stripe/webhooksEvents");
+
+/**
+ * The event, proven to come from Stripe. With the endpoint's signing secret
+ * the signature is checked; without it the event is fetched from Stripe by
+ * id, so a forged request body is never used either way.
+ */
+const verifiedEvent = async (req) => {
+  if (webhookSecret) {
+    return stripe.webhooks.constructEvent(
+      req.rawBody,
+      req.headers["stripe-signature"],
+      webhookSecret
+    );
+  }
+  if (!req.body?.id) throw new Error("Missing event id");
+  return stripe.events.retrieve(req.body.id);
+};
+
+const HANDLERS = {
+  "customer.subscription.deleted": (data) => subscriptionCancelled(data),
+  "subscription_schedule.canceled": (data) => subscriptionCancelled(data),
+  "subscription_schedule.aborted": (data) => subscriptionCancelled(data),
+  "customer.subscription.updated": (data) => customerSubscriptionUpdated(data),
+  "invoice.paid": (data) => invoicePaid(data),
+  "invoice.payment_failed": (data) => invoicePaymentFailed(data),
+  "payment_intent.succeeded": (data) => paymentIntent(data),
+  "payment_intent.payment_failed": (data) => paymentIntentFailed(data),
+  "payment_intent.processing": (data) => paymentIntentPendingOrCanceled(data, "pending"),
+  "payment_intent.canceled": (data) => paymentIntentPendingOrCanceled(data, "canceled"),
+  "refund.created": (data) => refundUpdated(data),
+  "refund.updated": (data) => refundUpdated(data),
+  "charge.refunded": (data) => refundUpdated(data),
+};
+
 const webhook = async (req, res) => {
-  let data;
-  // making a user variable here because individual switch cases do not have block scopes
-  let user;
-  let eventType;
-
-  data = req.body.data;
-  eventType = req.body.type;
-
-  console.log(
-    "*************** webhook event type: ",
-    eventType,
-    " ***************",
-  );
-  // if (!data?.object?.parent?.subscription_details?.subscription) {
-  //   console.log("No subscription found in the event data");
-  //   return res.sendStatus(200);
-  // }
-  // const subscription = await stripe.subscriptions.retrieve(
-  //   data?.object?.parent?.subscription_details?.subscription
-  // );
-  // if (!subscription) {
-  //   console.log("No subscription found for the given ID");
-  //   return res.sendStatus(200);
-  // }
-
-  switch (eventType) {
-    case "customer.subscription.deleted":
-      subscriptionCancelled(data);
-      break;
-    case "subscription_schedule.canceled":
-      subscriptionCancelled(data);
-      break;
-    case "subscription_schedule.aborted":
-      subscriptionCancelled(data);
-      break;
-    case "customer.subscription.created":
-      break;
-    case "customer.subscription.updated":
-      customerSubscriptionUpdated(data);
-      break;
-    case "checkout.session.completed":
-      break;
-    case "charge.succeeded":
-      chargeSuccess(data);
-      break;
-    case "invoice.paid":
-      invoicePaid(data);
-      break;
-    case "payment_intent.succeeded":
-      paymentIntent(data);
-      break;
-    case "payment_intent.payment_failed":
-      paymentIntentFailed(data);
-      break;
-    case "invoice.payment_failed":
-      invoicePaymentFailed(data);
-      break;
-    case "refund.created":
-    case "refund.updated":
-    case "charge.refunded":
-      refundUpdated(data);
-      break;
-    case "customer.subscription.trial_will_end":
-      break;
-    case "coupon.updated":
-      break;
-
-    case "coupon.deleted":
-      break;
-
-    case "coupon.updated":
-      break;
-
-    default:
+  let event;
+  try {
+    event = await verifiedEvent(req);
+  } catch (error) {
+    console.warn("Rejected Stripe webhook:", error?.message);
+    return res.status(400).send("Invalid webhook");
   }
 
-  res.sendStatus(200);
+  const handler = HANDLERS[event.type];
+  if (!handler) return res.sendStatus(200);
+
+  // Each event once: Stripe retries and may deliver twice.
+  if (await StripeEvent.exists({ eventId: event.id })) {
+    return res.sendStatus(200);
+  }
+
+  try {
+    await handler(event.data);
+    await StripeEvent.create({ eventId: event.id, type: event.type }).catch(() => {});
+    return res.sendStatus(200);
+  } catch (error) {
+    // Not marked as processed: answering 500 makes Stripe retry later.
+    console.error(`Stripe webhook ${event.type} (${event.id}) failed:`, error);
+    return res.sendStatus(500);
+  }
 };
 
 module.exports = webhook;

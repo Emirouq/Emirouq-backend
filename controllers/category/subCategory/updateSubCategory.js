@@ -3,6 +3,24 @@ const SubCategory = require("../../../models/SubCategory.model");
 const Attribute = require("../../../models/Attribute.model");
 const { v4: uuid } = require("uuid");
 const uploadBase64File = require("../../../services/util/upload-base64-file");
+const {
+  cleanValue,
+  normalizeValue,
+  sameValueRegex,
+} = require("../../../helpers/masterDataDuplicates");
+/** Rejects attribute labels repeated within one request (case-insensitive). */
+const assertUniqueLabels = (labels) => {
+  const seen = new Set();
+  for (const label of labels) {
+    const key = normalizeValue(label);
+    if (!key) continue;
+    if (seen.has(key)) {
+      throw httpErrors.Conflict(`Attribute "${cleanValue(label)}" is listed twice`);
+    }
+    seen.add(key);
+  }
+};
+
 
 const updateSubCategory = async (req, res, next) => {
   try {
@@ -25,7 +43,40 @@ const updateSubCategory = async (req, res, next) => {
 
     // Update title if provided
     if (title) {
-      subCategory.title = title;
+      if (
+        await SubCategory.exists({
+          uuid: { $ne: subCategoryId },
+          category: categoryId,
+          title: sameValueRegex(title),
+        })
+      ) {
+        throw httpErrors.Conflict(
+          `Sub-category "${cleanValue(title)}" already exists in this category`
+        );
+      }
+      subCategory.title = cleanValue(title);
+    }
+
+    // Attribute labels stay unique within the sub-category: across the
+    // request, and against attributes that are kept.
+    if (properties && Array.isArray(properties)) {
+      assertUniqueLabels(properties.map((prop) => prop?.label));
+      const editedIds = properties.map((prop) => prop?.uuid).filter(Boolean);
+      const kept = await Attribute.find({
+        subCategory: subCategoryId,
+        uuid: { $nin: [...editedIds, ...(deletedProperties || [])] },
+      })
+        .select("label")
+        .lean();
+      const keptLabels = new Set(kept.map((attr) => normalizeValue(attr.label)));
+      const clash = properties.find(
+        (prop) => !prop?.uuid && keptLabels.has(normalizeValue(prop?.label))
+      );
+      if (clash) {
+        throw httpErrors.Conflict(
+          `Attribute "${cleanValue(clash.label)}" already exists in this sub-category`
+        );
+      }
     }
 
     // Delete properties if provided
